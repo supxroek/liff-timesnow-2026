@@ -7,7 +7,7 @@
 // - ?requireLogin=0
 
 export const DEFAULT_APP_CONFIG = {
-  liffId: "2006755947-k5nn7jUA",
+  liffId: "2006755947-ToZa51HW",
   apiBaseUrl: "http://localhost:5000/api",
   endpoints: {
     register: "/liff/register",

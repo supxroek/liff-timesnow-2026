@@ -13,7 +13,7 @@ import {
   setFormErrors,
   setLoading,
   setText,
-  showBanner,
+  showToast,
 } from "../core/ui.js";
 import { isEmptyErrors, validateRegister } from "../core/validation.js";
 
@@ -45,6 +45,48 @@ function readPayload() {
   };
 }
 
+// โหลดรายชื่อบริษัท
+async function loadCompanies(apiBaseUrl) {
+  const select = document.getElementById("conpanyId");
+  if (!select) return;
+
+  try {
+    const res = await apiRequest({
+      apiBaseUrl,
+      path: "/api/companies",
+      method: "GET",
+    });
+
+    if (res.ok && Array.isArray(res.data)) {
+      // Clear existing options except the first one
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      res.data.forEach((company) => {
+        const option = document.createElement("option");
+        option.value = company.id;
+        option.textContent = company.name;
+        select.appendChild(option);
+      });
+    } else {
+      console.error("Failed to load companies:", res.error);
+      showToast({
+        type: "error",
+        title: "ข้อผิดพลาด",
+        message: "ไม่สามารถโหลดรายชื่อบริษัทได้",
+      });
+    }
+  } catch (err) {
+    console.error("Error loading companies:", err);
+    showToast({
+      type: "error",
+      title: "ข้อผิดพลาด",
+      message: "เกิดข้อผิดพลาดในการโหลดรายชื่อบริษัท",
+    });
+  }
+}
+
 // ==============================================================================
 // ฟังก์ชันบูตสแตรปหน้า Register
 async function bootstrap() {
@@ -59,15 +101,21 @@ async function bootstrap() {
   const { config, warnings } = getRuntimeConfig();
   if (config.debug) console.log("[LIFF Register] runtime config", config);
   if (warnings.length) {
-    showBanner({
+    showToast({
       type: "warning",
       title: "การกำหนดค่า",
       message: warnings.join(" | "),
     });
   }
 
-  // ==============================================================================
-  // เริ่มต้น LIFF SDK
+  // เริ่มต้น LIFF และตั้งค่า UI
+  await initializeLiffAndUI(config);
+
+  // ตั้งค่าการส่งฟอร์มลงทะเบียน
+  setupFormSubmission(config);
+}
+
+async function initializeLiffAndUI(config) {
   try {
     const liff = await initLiffOrThrow(config.liffId); // เริ่มต้น LIFF SDK
 
@@ -75,7 +123,7 @@ async function bootstrap() {
     if (config.requireLogin && !liff.isLoggedIn()) {
       const redirectUri = `${globalThis.location.origin}/register`;
       setText("statusText", "กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ LINE...");
-      showBanner({
+      showToast({
         type: "warning",
         title: "ต้องเข้าสู่ระบบ",
         message:
@@ -85,20 +133,17 @@ async function bootstrap() {
       return;
     }
 
-    // ดึงข้อมูลโปรไฟล์ผู้ใช้
-    const profile = await getProfileSafe();
-    setText(
-      "liffState",
-      globalThis.liff.isLoggedIn() ? "Logged in" : "Not logged in"
-    );
-    setText("lineUserId", profile?.userId || "-");
-    setText("displayName", profile?.displayName || "-");
+    // ดึงข้อมูลโปรไฟล์ผู้ใช้และตั้งค่า UI
+    await setupUserProfile();
+
+    // โหลดข้อมูลบริษัท
+    await loadCompanies(config.apiBaseUrl);
 
     setText("statusText", "พร้อม");
   } catch (err) {
     if (config.debug) console.error("[LIFF Register] init failed", err);
     setText("statusText", "ไม่พร้อม");
-    showBanner({
+    showToast({
       type: "error",
       title: "การเริ่ม LIFF ล้มเหลว",
       message:
@@ -106,9 +151,51 @@ async function bootstrap() {
         " | ตรวจสอบ: (1) หน้าเว็บต้องให้บริการผ่าน HTTPS (ไม่ใช่ file://), (2) ตั้งค่า LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL หน้านี้",
     });
   }
+}
 
-  // ==============================================================================
-  // ตั้งค่าการส่งฟอร์มลงทะเบียน
+async function setupUserProfile() {
+  const profile = await getProfileSafe();
+
+  let isLoggedIn;
+  if (typeof liff?.isLoggedIn === "function") {
+    isLoggedIn = liff.isLoggedIn();
+  } else if (
+    globalThis.liff &&
+    typeof globalThis.liff.isLoggedIn === "function"
+  ) {
+    isLoggedIn = globalThis.liff.isLoggedIn();
+  } else {
+    isLoggedIn = false;
+  }
+  setText("liffState", isLoggedIn ? "เข้าสู่ระบบแล้ว" : "ยังไม่เข้าสู่ระบบ");
+
+  const userId = profile?.userId || "-";
+  let displayUserId;
+  if (userId && userId !== "-") {
+    displayUserId =
+      userId.length > 10 ? userId.substring(0, 10) + "..." : userId;
+  } else {
+    displayUserId = "-";
+  }
+  setText("lineUserId", displayUserId);
+  setText("displayName", profile?.displayName || "-");
+
+  // แสดงรูปโปรไฟล์ โดยจัดการ Tailwind 'hidden' class
+  const img = document.getElementById("userProfileImg");
+  const placeholder = document.getElementById("userProfilePlaceholder");
+  if (img && placeholder) {
+    if (profile?.pictureUrl) {
+      img.src = profile.pictureUrl;
+      img.classList.remove("hidden");
+      placeholder.classList.add("hidden");
+    } else {
+      img.classList.add("hidden");
+      placeholder.classList.remove("hidden");
+    }
+  }
+}
+
+function setupFormSubmission(config) {
   const form = document.getElementById("registerForm");
   form.addEventListener("submit", async (e) => {
     e.preventDefault(); // ป้องกันการส่งฟอร์มแบบดีฟอลต์
@@ -122,7 +209,7 @@ async function bootstrap() {
     // ถ้ามีข้อผิดพลาด ให้แสดงข้อผิดพลาดและหยุดการส่ง
     if (!isEmptyErrors(errors)) {
       setFormErrors("registerForm", errors);
-      showBanner({
+      showToast({
         type: "error",
         title: "การตรวจสอบข้อมูล",
         message: "กรุณาแก้ไขฟิลด์ที่ไฮไลต์",
@@ -145,7 +232,7 @@ async function bootstrap() {
       });
 
       if (!res.ok) {
-        showBanner({
+        showToast({
           type: "error",
           title: "การส่งล้มเหลว",
           message: res.error,
@@ -155,7 +242,7 @@ async function bootstrap() {
       }
 
       // ส่งคำขอสำเร็จ
-      showBanner({
+      showToast({
         type: "success",
         title: "ลงทะเบียนแล้ว",
         message: "การลงทะเบียนของคุณถูกส่งเรียบร้อยแล้ว",
@@ -167,7 +254,7 @@ async function bootstrap() {
 
       form.reset(); // รีเซ็ตฟอร์ม
     } catch (err) {
-      showBanner({
+      showToast({
         type: "error",
         title: "Unexpected error",
         message: err?.message || String(err),
