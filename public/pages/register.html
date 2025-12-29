@@ -29,6 +29,7 @@
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+
                     }
                 }
             }
@@ -56,21 +57,14 @@
             class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs space-y-2 pointer-events-none"></div>
 
         <header class="mb-8 text-center">
-            <div
-                class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg shadow-brand-100 ring-1 ring-slate-100 overflow-hidden">
-                <img src="../assets/images/logo.png" alt="Logo" class="h-12 w-auto object-contain" />
+            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden">
+                <img src="../assets/images/logo_timenow_bottom.png" alt="Logo" class="h-20 w-auto object-contain" />
             </div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">ลงทะเบียนพนักงาน</h1>
-            <p class="mt-2 text-sm text-slate-500">กรอกข้อมูลเพื่อเริ่มต้นใช้งาน</p>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">ลงทะเบียน <span class="text-brand-600">Time
+                </span><span>Now</span>
+            </h1>
+            <p class="mt-2 text-sm text-slate-500">ลงทะเบียนเพื่อเริ่มต้นใช้งาน</p>
 
-            <div class="mt-4 flex items-center justify-center gap-2">
-                <span class="relative flex h-2.5 w-2.5">
-                    <span id="statusDot"
-                        class="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-400 opacity-75"></span>
-                    <span id="statusDotFixed" class="relative inline-flex h-2.5 w-2.5 rounded-full bg-slate-500"></span>
-                </span>
-                <span id="statusText" class="text-xs font-medium text-slate-500">กำลังโหลด...</span>
-            </div>
         </header>
 
         <div id="banner" class="mb-6 hidden rounded-lg p-4 text-sm shadow-sm" role="alert"></div>

@@ -92,7 +92,7 @@ async function loadCompanies(apiBaseUrl) {
 async function bootstrap() {
   hideBanner(); // ซ่อนแบนเนอร์แจ้งเตือน
   setLoading(false); // ปิดสถานะโหลด
-  setText("statusText", "กำลังเริ่ม..."); // อัปเดตสถานะเริ่มต้น
+  // statusText UI updates removed per request
 
   // ตรวจสอบการโหลดไลบรารี dayjs
   requireDayjs();
@@ -122,7 +122,7 @@ async function initializeLiffAndUI(config) {
     // บังคับให้ล็อกอินถ้าจำเป็น
     if (config.requireLogin && !liff.isLoggedIn()) {
       const redirectUri = `${globalThis.location.origin}/register`;
-      setText("statusText", "กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ LINE...");
+      // statusText UI updates removed per request
       showToast({
         type: "warning",
         title: "ต้องเข้าสู่ระบบ",
@@ -138,11 +138,10 @@ async function initializeLiffAndUI(config) {
 
     // โหลดข้อมูลบริษัท
     await loadCompanies(config.apiBaseUrl);
-
-    setText("statusText", "พร้อม");
+    // statusText UI updates removed per request
   } catch (err) {
     if (config.debug) console.error("[LIFF Register] init failed", err);
-    setText("statusText", "ไม่พร้อม");
+    // statusText UI updates removed per request
     showToast({
       type: "error",
       title: "การเริ่ม LIFF ล้มเหลว",
@@ -221,7 +220,7 @@ function setupFormSubmission(config) {
     const accessToken = getAccessTokenSafe();
 
     setLoading(true); // ตั้งค่าสถานะโหลด
-    setText("statusText", "กำลังส่ง...");
+    // statusText UI updates removed per request
     try {
       const res = await apiRequest({
         apiBaseUrl: config.apiBaseUrl,
@@ -237,7 +236,7 @@ function setupFormSubmission(config) {
           title: "การส่งล้มเหลว",
           message: res.error,
         });
-        setText("statusText", "ล้มเหลว");
+        // statusText UI updates removed per request
         return;
       }
 
@@ -247,7 +246,7 @@ function setupFormSubmission(config) {
         title: "ลงทะเบียนแล้ว",
         message: "การลงทะเบียนของคุณถูกส่งเรียบร้อยแล้ว",
       });
-      setText("statusText", "สำเร็จ");
+      // statusText UI updates removed per request
 
       // Optional: send a message back to the chat using LIFF messaging feature.
       await trySendMessage("ส่งคำขอการลงทะเบียนสำเร็จแล้ว");
@@ -259,7 +258,7 @@ function setupFormSubmission(config) {
         title: "Unexpected error",
         message: err?.message || String(err),
       });
-      setText("statusText", "ล้มเหลว");
+      // statusText UI updates removed per request
     } finally {
       setLoading(false);
     }

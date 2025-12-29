@@ -56,52 +56,18 @@
             class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs space-y-2 pointer-events-none"></div>
 
         <header class="mb-8 text-center">
-            <div
-                class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg shadow-brand-100 ring-1 ring-slate-100 overflow-hidden">
-                <img src="../assets/images/logo.png" alt="Logo" class="h-12 w-auto object-contain" />
+            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden">
+                <img src="../assets/images/logo_timenow_bottom.png" alt="Logo" class="h-20 w-auto object-contain" />
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">แจ้งลืมลงเวลา</h1>
-            <p class="mt-2 text-sm text-slate-500">ส่งคำขอแก้ไขเวลาเข้า-ออกงาน</p>
+            <p class="mt-2 text-sm text-slate-500">แจ้งคำขอแก้ไขเวลาเข้า-ออกงาน</p>
 
-            <div class="mt-4 flex items-center justify-center gap-2">
-                <span class="relative flex h-2.5 w-2.5">
-                    <span id="statusDot"
-                        class="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-400 opacity-75"></span>
-                    <span id="statusDotFixed" class="relative inline-flex h-2.5 w-2.5 rounded-full bg-slate-500"></span>
-                </span>
-                <span id="statusText" class="text-xs font-medium text-slate-500">กำลังโหลด...</span>
-            </div>
         </header>
 
         <div id="banner" class="mb-6 hidden rounded-lg p-4 text-sm shadow-sm" role="alert"></div>
 
         <section
             class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100">
-            <!-- User Info Card -->
-            <div class="mb-6 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                <div class="flex items-center gap-3">
-                    <div id="userAvatar"
-                        class="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-600 font-bold overflow-hidden ring-2 ring-white">
-                        <img id="userProfileImg" class="absolute inset-0 h-full w-full object-cover hidden"
-                            alt="Profile" />
-                        <svg id="userProfilePlaceholder" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">บัญชี LINE</p>
-                        <p id="displayName" class="truncate text-sm font-semibold text-slate-900">-</p>
-                    </div>
-                </div>
-                <div
-                    class="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs text-slate-500">
-                    <span>ID: <span id="lineUserId" class="font-mono">-</span></span>
-                    <span id="liffState"
-                        class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600">-</span>
-                </div>
-            </div>
 
             <form id="forgetTimeForm" class="space-y-5">
                 <div class="space-y-1.5">
@@ -112,9 +78,9 @@
                             <option value="">เลือกประเภท...</option>
                             <option value="work_in">เข้างาน (Work In)</option>
                             <option value="break_in">พักเบรก (Break In)</option>
-                            <option value="ot_in">เข้าโอที (OT In)</option>
+                            <option value="break_out">สิ้นสุดพัก (Break Out)</option>
                             <option value="work_out">ออกงาน (Work Out)</option>
-                            <option value="break_out">หมดเวลาพัก (Break Out)</option>
+                            <option value="ot_in">เข้าโอที (OT In)</option>
                             <option value="ot_out">ออกโอที (OT Out)</option>
                         </select>
                         <div

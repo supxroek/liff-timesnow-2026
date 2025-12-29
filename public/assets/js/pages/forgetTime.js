@@ -52,7 +52,7 @@ function readPayload() {
 async function bootstrap() {
   hideBanner(); // ซ่อนแบนเนอร์แจ้งเตือน
   setLoading(false); // ปิดสถานะโหลด
-  setText("statusText", "กำลังเริ่ม..."); // อัปเดตสถานะเริ่มต้น
+  // statusText UI updates removed per request
 
   // ตรวจสอบการโหลดไลบรารี dayjs
   requireDayjs();
@@ -135,11 +135,10 @@ async function initLiffAndSetupUI(config) {
 
     // ตั้งค่า UI สำหรับโปรไฟล์
     setupProfileUI(liff, profile);
-
-    setText("statusText", "พร้อม"); // อัปเดตสถานะพร้อม
+    // statusText UI updates removed per request
   } catch (err) {
     if (config.debug) console.error("[LIFF ForgetTime] init failed", err);
-    setText("statusText", "ไม่พร้อม");
+    // statusText UI updates removed per request
     showToast({
       type: "error",
       title: "การเริ่ม LIFF ล้มเหลว",
@@ -154,7 +153,6 @@ async function initLiffAndSetupUI(config) {
 function handleLoginRedirect(liff, config) {
   if (config.requireLogin && !liff.isLoggedIn()) {
     const redirectUri = `${globalThis.location.origin}/forget-time`;
-    setText("statusText", "กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ LINE...");
     showToast({
       type: "warning",
       title: "ต้องเข้าสู่ระบบ",
@@ -233,7 +231,7 @@ function setupFormSubmission(config) {
     }
 
     setLoading(true);
-    setText("statusText", "กำลังส่ง...");
+    // statusText UI updates removed per request
 
     try {
       // สร้าง FormData สำหรับส่งไฟล์
@@ -276,7 +274,6 @@ function setupFormSubmission(config) {
           title: "การส่งล้มเหลว",
           message: message,
         });
-        setText("statusText", "ล้มเหลว");
         return;
       }
 
@@ -286,7 +283,7 @@ function setupFormSubmission(config) {
         title: "ส่งแล้ว",
         message: "คำขอลืมเวลา (forget-time) ของคุณถูกส่งเรียบร้อยแล้ว",
       });
-      setText("statusText", "สำเร็จ");
+      // statusText UI updates removed per request
 
       // ส่งข้อความผ่าน LIFF
       await trySendMessage("ส่งคำขอ forget-time สำเร็จแล้ว");
@@ -302,7 +299,7 @@ function setupFormSubmission(config) {
         title: "Unexpected error",
         message: err?.message || String(err),
       });
-      setText("statusText", "Failed");
+      // statusText UI updates removed per request
     } finally {
       setLoading(false);
     }
