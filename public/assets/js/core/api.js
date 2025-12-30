@@ -85,12 +85,15 @@ export async function apiRequest({
   const url = buildApiUrl(apiBaseUrl, path);
 
   const requestHeaders = prepareHeaders(headers, idToken);
-  const requestBody = prepareBodyAndHeaders(body, requestHeaders);
+  const { requestBody, requestHeaders: finalHeaders } = prepareBodyAndHeaders(
+    body,
+    requestHeaders
+  );
 
   try {
     const res = await fetch(url, {
       method: method || "GET",
-      headers: requestHeaders,
+      headers: finalHeaders,
       body: requestBody,
       cache: "no-store",
     });
