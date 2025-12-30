@@ -67,6 +67,19 @@ export function getAccessTokenSafe() {
   }
 }
 
+// ฟังก์ชันช่วยเหลือสำหรับดึง ID token อย่างปลอดภัย (ใช้สำหรับตรวจสอบฝั่งเซิร์ฟเวอร์)
+export function getIdTokenSafe() {
+  if (!globalThis.liff) return null;
+  try {
+    // LIFF SDK provides getIDToken()
+    return typeof globalThis.liff.getIDToken === "function"
+      ? globalThis.liff.getIDToken()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 // ==============================================================================
 // ฟังก์ชันช่วยเหลือสำหรับส่งข้อความผ่าน LIFF
 export async function trySendMessage(text) {

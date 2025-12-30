@@ -9,7 +9,7 @@
 // Helper functions
 const BASE_URLS = {
   dev: "http://localhost:5000/api",
-  prod: "https://api.example.com",
+  prod: "http://localhost:5000/api",
 };
 
 const LIFF_IDS = {
@@ -58,9 +58,9 @@ export const DEFAULT_APP_CONFIG = {
   liffId: getLiffId(),
   apiBaseUrl: getBaseUrl(),
   endpoints: {
-    company: "/company",
-    register: "/register",
-    forgetTime: "/forget-time",
+    company: "/liff/company",
+    register: "/liff/register",
+    forgetTime: "/liff/forget-time",
   },
   requireLogin: true,
   debug: false,

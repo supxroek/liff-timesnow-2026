@@ -3,7 +3,7 @@ import { apiRequest } from "../core/api.js";
 import {
   initLiffOrThrow,
   ensureLoggedIn,
-  getAccessTokenSafe,
+  getIdTokenSafe,
   getProfileSafe,
   trySendMessage,
 } from "../core/liff.js";
@@ -217,8 +217,8 @@ function setupFormSubmission(config) {
       return;
     }
 
-    // ดึงโทเค็นการเข้าถึงอย่างปลอดภัย
-    const accessToken = getAccessTokenSafe();
+    // ดึง ID token อย่างปลอดภัย เพื่อส่งให้ backend ตรวจสอบ (LIFF ให้ getIDToken)
+    const idToken = await getIdTokenSafe();
     const profile = await getProfileSafe();
 
     // ตรวจสอบว่ามีข้อมูลโปรไฟล์หรือไม่
@@ -252,7 +252,7 @@ function setupFormSubmission(config) {
         path: config.endpoints.forgetTime,
         method: "POST",
         body: formData,
-        accessToken,
+        idToken,
       });
 
       if (!res.ok) {

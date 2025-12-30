@@ -3,7 +3,7 @@ import { apiRequest } from "../core/api.js";
 import {
   initLiffOrThrow,
   ensureLoggedIn,
-  getAccessTokenSafe,
+  getIdTokenSafe,
   getProfileSafe,
   trySendMessage,
 } from "../core/liff.js";
@@ -45,36 +45,69 @@ function readPayload() {
   };
 }
 
+// ดึงรายชื่อบริษัทจาก API
+function parseCompanies(res) {
+  if (Array.isArray(res.data)) return res.data;
+  if (res.data && Array.isArray(res.data.data)) return res.data.data;
+  if (res.data && Array.isArray(res.data.results)) return res.data.results;
+  return null;
+}
+
+// เติมข้อมูลบริษัทลงใน select element
+function populateSelect(select, companies) {
+  // Clear existing options except the first one
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+  companies.forEach((company) => {
+    const option = document.createElement("option");
+    option.value = company.id;
+    option.textContent = company.name;
+    select.appendChild(option);
+  });
+}
+
 // โหลดรายชื่อบริษัท
 async function loadCompanies(config) {
   const select = document.getElementById("conpanyId");
   if (!select) return;
 
-  // ดึงโทเค็นการเข้าถึงอย่างปลอดภัย
-  const accessToken = getAccessTokenSafe();
+  // ดึง ID token อย่างปลอดภัย เพื่อส่งให้ backend ตรวจสอบ (LIFF ให้ getIDToken)
+  // getIdTokenSafe may be synchronous or return a promise in future; await to be safe
+  const idToken = await getIdTokenSafe();
+
+  // If no idToken, force login (if required) or show a helpful message
+  if (!idToken) {
+    if (config.requireLogin) {
+      // Redirect to login flow
+      ensureLoggedIn({ redirectUri: `${globalThis.location.origin}/register` });
+      return;
+    }
+    console.warn("loadCompanies: missing idToken");
+    showToast({
+      type: "error",
+      title: "ข้อผิดพลาด",
+      message: "ไม่พบ Id token ของผู้ใช้ กรุณาเข้าสู่ระบบ",
+    });
+    return;
+  }
 
   try {
     const res = await apiRequest({
       apiBaseUrl: config.apiBaseUrl,
       path: config.endpoints.company,
       method: "GET",
-      accessToken,
+      idToken,
     });
 
-    if (res.ok && Array.isArray(res.data)) {
-      // Clear existing options except the first one
-      while (select.options.length > 1) {
-        select.remove(1);
+    if (res.ok) {
+      const companies = parseCompanies(res);
+      if (companies) {
+        populateSelect(select, companies);
+        return;
       }
 
-      res.data.forEach((company) => {
-        const option = document.createElement("option");
-        option.value = company.id;
-        option.textContent = company.name;
-        select.appendChild(option);
-      });
-    } else {
-      console.error("Failed to load companies:", res.error);
+      console.error("Failed to load companies: unexpected response shape", res);
       showToast({
         type: "error",
         title: "ข้อผิดพลาด",
@@ -220,7 +253,7 @@ function setupFormSubmission(config) {
     }
 
     // ดึงโทเค็นการเข้าถึงอย่างปลอดภัย
-    const accessToken = getAccessTokenSafe();
+    const idToken = getIdTokenSafe();
 
     setLoading(true); // ตั้งค่าสถานะโหลด
     // statusText UI updates removed per request
@@ -230,7 +263,7 @@ function setupFormSubmission(config) {
         path: config.endpoints.register,
         method: "POST",
         body: payload,
-        accessToken,
+        idToken,
       });
 
       if (!res.ok) {
