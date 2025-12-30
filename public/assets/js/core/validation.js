@@ -16,10 +16,10 @@ export function validateRegister(payload) {
   else if (!/^\d{13}$/.test(idCard))
     errors.IDCard = "หมายเลขบัตรประชาชนต้องมี 13 หลัก";
 
-  const companyIdRaw = payload.conpanyId;
+  const companyIdRaw = payload.companyId;
   const companyIdNum = Number(companyIdRaw);
   if (!Number.isInteger(companyIdNum) || companyIdNum <= 0)
-    errors.conpanyId = "รหัสบริษัทต้องเป็นจำนวนเต็มบวก";
+    errors.companyId = "รหัสบริษัทต้องเป็นจำนวนเต็มบวก";
 
   const startDate = String(payload.start_date || "").trim();
   if (!startDate) errors.start_date = "กรุณาระบุวันที่เริ่มต้นงาน";

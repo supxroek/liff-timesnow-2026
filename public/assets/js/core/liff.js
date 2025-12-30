@@ -1,5 +1,22 @@
 import { showGlobalLoader, hideGlobalLoader } from "./ui.js";
 
+function decodeIdToken(token) {
+  if (!token) return null;
+  try {
+    if (typeof globalThis.liff?.getDecodedIDToken === "function") {
+      return globalThis.liff.getDecodedIDToken();
+    } else {
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const payload = parts[1].replaceAll("-", "+").replaceAll("_", "/");
+      const json = atob(payload);
+      return JSON.parse(json);
+    }
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // ฟังก์ชันช่วยเหลือสำหรับการเริ่มต้น LIFF SDK หรือโยนข้อผิดพลาด
 export async function initLiffOrThrow(liffId) {
@@ -68,13 +85,28 @@ export function getAccessTokenSafe() {
 }
 
 // ฟังก์ชันช่วยเหลือสำหรับดึง ID token อย่างปลอดภัย (ใช้สำหรับตรวจสอบฝั่งเซิร์ฟเวอร์)
-export function getIdTokenSafe() {
+export async function getIdTokenSafe() {
   if (!globalThis.liff) return null;
   try {
-    // LIFF SDK provides getIDToken()
-    return typeof globalThis.liff.getIDToken === "function"
-      ? globalThis.liff.getIDToken()
-      : null;
+    const token =
+      typeof globalThis.liff.getIDToken === "function"
+        ? globalThis.liff.getIDToken()
+        : null;
+
+    const decoded = decodeIdToken(token);
+    const now = Math.floor(Date.now() / 1000);
+    if (decoded?.exp && decoded.exp <= now) {
+      // Token expired — attempt to refresh by re-login
+      showGlobalLoader("Session expired. Redirecting to login...");
+      if (typeof globalThis.liff.logout === "function")
+        globalThis.liff.logout();
+      globalThis.liff.login({ redirectUri: globalThis.location.href });
+      hideGlobalLoader();
+      // login will redirect the page; return null for now
+      return null;
+    }
+
+    return token;
   } catch {
     return null;
   }

@@ -31,16 +31,20 @@ function toIsoFromDateInput(yyyyMmDd) {
 }
 
 // อ่านข้อมูลจากฟอร์ม
-function readPayload() {
+async function readPayload() {
+  const profile = await getProfileSafe();
+
   const name = document.getElementById("name").value;
   const IDCard = document.getElementById("IDCard").value;
-  const conpanyId = document.getElementById("conpanyId").value;
+  const companyId = document.getElementById("companyId").value;
+  const lineUserId = profile?.userId || "";
   const startDateInput = document.getElementById("start_date").value;
 
   return {
     name: String(name || "").trim(),
     IDCard: String(IDCard || "").trim(),
-    conpanyId: Number(conpanyId),
+    companyId: Number(companyId),
+    lineUserId: String(lineUserId || "").trim(),
     start_date: startDateInput ? toIsoFromDateInput(startDateInput) : "",
   };
 }
@@ -69,7 +73,7 @@ function populateSelect(select, companies) {
 
 // โหลดรายชื่อบริษัท
 async function loadCompanies(config) {
-  const select = document.getElementById("conpanyId");
+  const select = document.getElementById("companyId");
   if (!select) return;
 
   // ดึง ID token อย่างปลอดภัย เพื่อส่งให้ backend ตรวจสอบ (LIFF ให้ getIDToken)
@@ -238,7 +242,7 @@ function setupFormSubmission(config) {
     hideBanner(); // ซ่อนแบนเนอร์แจ้งเตือน
 
     // อ่านข้อมูลจากฟอร์มและตรวจสอบความถูกต้อง
-    const payload = readPayload();
+    const payload = await readPayload();
     const errors = validateRegister(payload);
 
     // ถ้ามีข้อผิดพลาด ให้แสดงข้อผิดพลาดและหยุดการส่ง
@@ -253,7 +257,7 @@ function setupFormSubmission(config) {
     }
 
     // ดึงโทเค็นการเข้าถึงอย่างปลอดภัย
-    const idToken = getIdTokenSafe();
+    const idToken = await getIdTokenSafe();
 
     setLoading(true); // ตั้งค่าสถานะโหลด
     // statusText UI updates removed per request
