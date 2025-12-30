@@ -1,4 +1,5 @@
-import { getRuntimeConfig, buildApiUrl } from "../core/config.js";
+import { getRuntimeConfig } from "../core/config.js";
+import { apiRequest } from "../core/api.js";
 import {
   initLiffOrThrow,
   ensureLoggedIn,
@@ -19,7 +20,7 @@ import { isEmptyErrors, validateForgetTime } from "../core/validation.js";
 function requireDayjs() {
   if (!globalThis.dayjs)
     throw new Error(
-      "dayjs not loaded. Include https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"
+      "dayjs ไลบรารีไม่ได้ถูกโหลด. ตรวจสอบให้แน่ใจว่าได้รวมสคริปต์ dayjs ในหน้าเว็บของคุณแล้ว"
     );
 }
 
@@ -144,7 +145,7 @@ async function initLiffAndSetupUI(config) {
       title: "การเริ่ม LIFF ล้มเหลว",
       message:
         (err?.message || String(err)) +
-        " | ตรวจสอบ: (1) หน้าเว็บต้องให้บริการผ่าน HTTPS (ไม่ใช่ file://), (2) ตั้งค่า LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL หน้านี้",
+        " โปรดตรวจสอบการตั้งค่า LIFF ID และการเชื่อมต่อเครือข่ายของคุณ",
     });
   }
 }
@@ -156,8 +157,7 @@ function handleLoginRedirect(liff, config) {
     showToast({
       type: "warning",
       title: "ต้องเข้าสู่ระบบ",
-      message:
-        "กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ LINE โปรดตั้งค่า LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL หน้านี้ (แนะนำ: /forget-time).",
+      message: "กำลังเปลี่ยนเส้นทางไปยังหน้าการเข้าสู่ระบบ LINE...",
     });
     ensureLoggedIn({ redirectUri });
     return true;
@@ -221,6 +221,7 @@ function setupFormSubmission(config) {
     const accessToken = getAccessTokenSafe();
     const profile = await getProfileSafe();
 
+    // ตรวจสอบว่ามีข้อมูลโปรไฟล์หรือไม่
     if (!profile?.userId) {
       showToast({
         type: "error",
@@ -246,28 +247,17 @@ function setupFormSubmission(config) {
       if (evidenceInput.files.length > 0) {
         formData.append("evidence", evidenceInput.files[0]);
       }
-
-      const url = buildApiUrl(config.apiBaseUrl, config.endpoints.forgetTime);
-
-      const res = await fetch(url, {
+      const res = await apiRequest({
+        apiBaseUrl: config.apiBaseUrl,
+        path: config.endpoints.forgetTime,
         method: "POST",
-        headers: {
-          // ไม่ต้องตั้ง Content-Type เพราะ fetch จะตั้งให้เองเมื่อใช้ FormData
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
         body: formData,
+        accessToken,
       });
-
-      let json;
-      try {
-        json = await res.json();
-      } catch {
-        json = null;
-      }
 
       if (!res.ok) {
         const message =
-          (json && (json.message || json.error || json.msg)) ||
+          (res.data && (res.data.message || res.data.error || res.data.msg)) ||
           `Request failed (${res.status})`;
         showToast({
           type: "error",

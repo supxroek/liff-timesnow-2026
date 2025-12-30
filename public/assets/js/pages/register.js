@@ -20,7 +20,7 @@ import { isEmptyErrors, validateRegister } from "../core/validation.js";
 function requireDayjs() {
   if (!globalThis.dayjs)
     throw new Error(
-      "dayjs not loaded. Include https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"
+      "dayjs ไลบรารีไม่ถูกโหลด. ตรวจสอบให้แน่ใจว่าได้รวมสคริปต์ dayjs ในหน้าเว็บของคุณแล้ว"
     );
 }
 
@@ -46,15 +46,19 @@ function readPayload() {
 }
 
 // โหลดรายชื่อบริษัท
-async function loadCompanies(apiBaseUrl) {
+async function loadCompanies(config) {
   const select = document.getElementById("conpanyId");
   if (!select) return;
 
+  // ดึงโทเค็นการเข้าถึงอย่างปลอดภัย
+  const accessToken = getAccessTokenSafe();
+
   try {
     const res = await apiRequest({
-      apiBaseUrl,
-      path: "/api/companies",
+      apiBaseUrl: config.apiBaseUrl,
+      path: config.endpoints.company,
       method: "GET",
+      accessToken,
     });
 
     if (res.ok && Array.isArray(res.data)) {
@@ -126,8 +130,7 @@ async function initializeLiffAndUI(config) {
       showToast({
         type: "warning",
         title: "ต้องเข้าสู่ระบบ",
-        message:
-          "กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ LINE โปรดตั้งค่า LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL หน้านี้ (แนะนำ: /register).",
+        message: "กำลังเปลี่ยนเส้นทางไปยังหน้าการเข้าสู่ระบบ LINE...",
       });
       ensureLoggedIn({ redirectUri });
       return;
@@ -137,7 +140,7 @@ async function initializeLiffAndUI(config) {
     await setupUserProfile();
 
     // โหลดข้อมูลบริษัท
-    await loadCompanies(config.apiBaseUrl);
+    await loadCompanies(config);
     // statusText UI updates removed per request
   } catch (err) {
     if (config.debug) console.error("[LIFF Register] init failed", err);
@@ -147,7 +150,7 @@ async function initializeLiffAndUI(config) {
       title: "การเริ่ม LIFF ล้มเหลว",
       message:
         (err?.message || String(err)) +
-        " | ตรวจสอบ: (1) หน้าเว็บต้องให้บริการผ่าน HTTPS (ไม่ใช่ file://), (2) ตั้งค่า LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL หน้านี้",
+        " โปรดตรวจสอบการตั้งค่า LIFF ID และการเชื่อมต่อเครือข่ายของคุณ",
     });
   }
 }

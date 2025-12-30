@@ -1,15 +1,24 @@
-// ==============================================================================
+import { showGlobalLoader, hideGlobalLoader } from "./ui.js";
+
+// ============================================================================
 // ฟังก์ชันช่วยเหลือสำหรับการเริ่มต้น LIFF SDK หรือโยนข้อผิดพลาด
 export async function initLiffOrThrow(liffId) {
   if (!globalThis.liff)
     throw new Error(
-      "LIFF SDK ไม่ถูกโหลด. โปรดตรวจสอบให้แน่ใจว่าได้รวม https://static.line-scdn.net/liff/edge/2/sdk.js"
+      "LIFF SDK ไม่ถูกโหลด. ตรวจสอบให้แน่ใจว่าได้รวมสคริปต์ LIFF SDK ในหน้าเว็บของคุณแล้ว"
     );
   if (!liffId) throw new Error("ขาด LIFF ID");
 
-  await globalThis.liff.init({ liffId });
-  if (globalThis.liff.ready) await globalThis.liff.ready;
-  return globalThis.liff;
+  // แสดง overlay ขณะเริ่ม LIFF
+  try {
+    showGlobalLoader("กำลังเริ่มระบบ LINE...");
+    await globalThis.liff.init({ liffId });
+    if (globalThis.liff.ready) await globalThis.liff.ready;
+    return globalThis.liff;
+  } finally {
+    // ซ่อน overlay เสมอ (กรณี error หรือ success)
+    hideGlobalLoader();
+  }
 }
 
 // ==============================================================================
@@ -25,9 +34,15 @@ export function ensureLoggedIn({ redirectUri } = {}) {
   if (!globalThis.liff) throw new Error("LIFF SDK ไม่ได้ถูกเริ่มต้น");
   if (globalThis.liff.isLoggedIn()) return;
 
-  globalThis.liff.login({
-    redirectUri: redirectUri || globalThis.location.href,
-  });
+  try {
+    showGlobalLoader("กำลังเปลี่ยนเส้นทางไปยังการเข้าสู่ระบบ...");
+    globalThis.liff.login({
+      redirectUri: redirectUri || globalThis.location.href,
+    });
+  } catch (err) {
+    hideGlobalLoader();
+    throw err;
+  }
 }
 
 // ==============================================================================

@@ -129,6 +129,54 @@ export function setLoading(isLoading) {
   }
 }
 
+// ============================================================================
+// Global full-screen loading overlay
+export function showGlobalLoader(message = "กำลังเชื่อมต่อ...") {
+  let overlay = document.getElementById("globalLoadingOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    const msgEl = overlay.querySelector("div > div");
+    if (msgEl) msgEl.textContent = message;
+  } else {
+    overlay = document.createElement("div");
+    overlay.id = "globalLoadingOverlay";
+    overlay.style.position = "fixed";
+    overlay.style.left = "0";
+    overlay.style.top = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.background = "rgba(0,0,0,0.5)";
+    overlay.style.zIndex = "9999";
+    overlay.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+        <svg class="loader-spin" width="48" height="48" viewBox="0 0 50 50" style="animation:spin 1s linear infinite;">
+          <circle cx="25" cy="25" r="20" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="31.4 31.4"></circle>
+        </svg>
+        <div style="color:#fff;font-size:16px;">${escapeHtml(message)}</div>
+      </div>
+    `;
+
+    // small keyframe for spin (inject once)
+    const styleId = "globalLoaderStyles";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(overlay);
+  }
+}
+
+export function hideGlobalLoader() {
+  const overlay = document.getElementById("globalLoadingOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
 // ฟังก์ชันล้างข้อผิดพลาดในฟอร์มที่ระบุด้วย ID
 export function clearFormErrors(formId) {
   const form = document.getElementById(formId);
