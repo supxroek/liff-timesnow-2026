@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อนุมัติการลงทะเบียน - Time Now</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 font-sans text-slate-900">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center ring-1 ring-slate-100">
+        <div class="mb-6 flex justify-center">
+            <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-brand-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="text-2xl font-bold text-slate-900 mb-2">กำลังดำเนินการ...</h1>
+        <p class="text-slate-500 mb-8">กรุณารอสักครู่ ระบบกำลังประมวลผลคำขอของคุณ</p>
+
+        <div id="loading" class="flex justify-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600"></div>
+        </div>
+
+        <div id="result" class="hidden">
+            <!-- Result content will be injected here -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { getBaseUrl } from './config/app.config.js';
+
+        async function handleApprove() {
+            const urlParams = new URLSearchParams(globalThis.location.search);
+            const token = urlParams.get('token');
+            const action = urlParams.get('action') || 'approve'; // approve or reject
+
+            if (!token) {
+                showError('ไม่พบ Token การยืนยันตัวตน');
+                return;
+            }
+
+            try {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/approve-register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token, action })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('ดำเนินการสำเร็จ', 'ระบบได้บันทึกผลการอนุมัติเรียบร้อยแล้ว');
+                    setTimeout(() => {
+                        window.close();
+                    }, 3000);
+                } else {
+                    showError(data.message || 'เกิดข้อผิดพลาดในการดำเนินการ');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+            }
+        }
+
+        function showSuccess(title, message) {
+            document.getElementById('loading').classList.add('hidden');
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `
+                <div class="text-green-500 text-xl font-semibold mb-2">${title}</div>
+                <p class="text-gray-600 mb-4">${message}</p>
+                <p class="text-sm text-gray-400">หน้าต่างนี้จะปิดอัตโนมัติใน 3 วินาที</p>
+            `;
+            document.querySelector('h1').textContent = 'เสร็จสิ้น';
+            document.querySelector('p.text-gray-600').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `
+                <div class="text-red-500 text-xl font-semibold mb-2">เกิดข้อผิดพลาด</div>
+                <p class="text-gray-600">${message}</p>
+            `;
+            document.querySelector('h1').textContent = 'ผิดพลาด';
+            document.querySelector('p.text-gray-600').classList.add('hidden');
+        }
+
+        // Start process
+        await handleApprove();
+    </script>
+</body>
+
+</html>

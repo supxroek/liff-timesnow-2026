@@ -4,7 +4,8 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       { "source": "/register", "destination": "/pages/register.html" },
-      { "source": "/forget-time", "destination": "/pages/forget-time.html" }
+      { "source": "/forget-time", "destination": "/pages/forget-time.html" },
+      { "source": "/approval", "destination": "/pages/approve.html" }
     ],
     "headers": [
       {
