@@ -188,6 +188,9 @@ function showError(message) {
       <p class="text-xs text-slate-500">กรุณาติดต่อผู้ดูแลระบบหากปัญหายังคงมีอยู่</p>
     `;
   }
+
+  // Auto Close
+  setTimeout(() => globalThis.close(), 3000);
 }
 
 // ฟังก์ชัน Escape HTML เพื่อป้องกัน XSS

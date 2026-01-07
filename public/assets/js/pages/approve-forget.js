@@ -31,6 +31,17 @@ function decodeToken(token) {
   }
 }
 
+// Helper: Escape HTML
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 // Helper: ตั้งค่าข้อความในองค์ประกอบ HTML
 function setText(id, text) {
   const el = document.getElementById(id);
@@ -74,66 +85,126 @@ function showInfo(data) {
     showElement("action-buttons");
     setText("main-title", "ตรวจสอบคำขอลืมลงเวลา");
     setText("subtitle", "กรุณาเลือกดำเนินการสำหรับคำขอนี้");
-  } else if (data.status === "approved") {
-    showResult("success", "ดำเนินการแล้ว", "คำขอนี้ถูกอนุมัติไปแล้ว", true);
-    return;
-  } else if (data.status === "rejected") {
-    showResult("error", "ดำเนินการแล้ว", "คำขอนี้ถูกปฏิเสธไปแล้ว", true);
+  } else if (data.status === "approved" || data.status === "rejected") {
+    showAlreadyProcessed(data);
     return;
   } else {
     // If status is unknown
-    showResult(
-      "error",
-      "ข้อผิดพลาด",
-      "สถานะคำขอไม่ถูกต้อง (" + data.status + ")"
-    );
+    showError("ข้อผิดพลาด", "สถานะคำขอไม่ถูกต้อง (" + data.status + ")");
     return;
   }
 }
 
-// แสดงผลลัพธ์การอนุมัติ/ปฏิเสธ
-function showResult(type, title, message, keepInfo = false) {
+// แสดงผลสำเร็จ
+function showSuccess(title, message) {
   hideElement("loading");
   hideElement("action-buttons");
-
-  if (keepInfo) {
-    showElement("user-info");
-  } else {
-    hideElement("user-info");
-  }
-
+  hideElement("user-info");
   showElement("result");
 
-  const resultIcon = document.querySelector("#result svg");
-  const resultBg = document.querySelector("#result div");
+  setText("main-title", "สำเร็จ");
+  hideElement("subtitle");
 
-  if (type === "success") {
-    // Green
-    resultBg.className =
-      "mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4";
-    resultIcon.setAttribute("class", "h-8 w-8 text-green-600");
-    resultIcon.innerHTML =
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
-  } else if (type === "error") {
-    // Red
-    resultBg.className =
-      "mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4";
-    resultIcon.setAttribute("class", "h-8 w-8 text-red-600");
-    resultIcon.innerHTML =
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
-  } else {
-    // Warning (Orange) - for general errors or warnings
-    resultBg.className =
-      "mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 mb-4";
-    resultIcon.setAttribute("class", "h-8 w-8 text-orange-600");
-    // Exclamation Mark
-    resultIcon.innerHTML =
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />';
+  const resultEl = document.getElementById("result");
+  if (resultEl) {
+    resultEl.innerHTML = `
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <div class="text-green-600 text-lg font-bold mb-2">${escapeHtml(
+        title
+      )}</div>
+      <p class="text-slate-600 text-sm mb-4 leading-relaxed">${escapeHtml(
+        message
+      )}</p>
+      <div class="inline-flex items-center gap-1.5 text-xs text-slate-400 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>หน้าต่างจะปิดอัตโนมัติใน 3 วินาที</span>
+      </div>
+    `;
   }
 
-  setText("result-message", message);
-  setText("main-title", title);
-  setText("subtitle", "ปิดหน้าต่างนี้ได้เลย");
+  // Auto close window after 3 seconds
+  setTimeout(() => globalThis.close(), 3000);
+}
+
+// แสดงผลเมื่อดำเนินการไปแล้ว
+function showAlreadyProcessed(data) {
+  hideElement("loading");
+  hideElement("action-buttons");
+  hideElement("user-info");
+  showElement("result");
+
+  const isApproved = data.status === "approved";
+  const colorClass = isApproved ? "text-blue-600" : "text-slate-600";
+  const bgClass = isApproved ? "bg-blue-100" : "bg-slate-100";
+  const title = isApproved ? "อนุมัติเรียบร้อยแล้ว" : "ปฏิเสธเรียบร้อยแล้ว";
+  const icon = isApproved
+    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />'
+    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
+
+  setText("main-title", "ดำเนินการเสร็จสิ้น");
+  hideElement("subtitle");
+
+  const resultEl = document.getElementById("result");
+  if (resultEl) {
+    resultEl.innerHTML = `
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${bgClass}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 ${colorClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          ${icon}
+        </svg>
+      </div>
+      <div class="text-slate-900 text-lg font-bold mb-2">${title}</div>
+      <p class="text-slate-600 text-sm mb-4">
+        พนักงาน: <span class="font-semibold">${escapeHtml(
+          data.employeeName
+        )}</span><br>
+        วันที่: ${escapeHtml(data.date)}<br>
+        <span class="text-xs text-slate-400">คำขอนี้ถูกดำเนินการไปแล้ว</span>
+      </p>
+    `;
+  }
+
+  // Auto close window after 5 seconds
+  setTimeout(() => globalThis.close(), 5000);
+}
+
+// แสดงข้อผิดพลาด
+function showError(title, message) {
+  hideElement("loading");
+  hideElement("action-buttons");
+  hideElement("user-info");
+  showElement("result");
+
+  setText("main-title", "ไม่สามารถดำเนินการได้");
+  hideElement("subtitle");
+
+  const resultEl = document.getElementById("result");
+  if (resultEl) {
+    resultEl.innerHTML = `
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="text-red-600 text-lg font-bold mb-2">${escapeHtml(
+        title
+      )}</div>
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <p class="text-red-800 text-sm leading-relaxed">${escapeHtml(
+          message
+        )}</p>
+      </div>
+      <p class="text-xs text-slate-500">กรุณาติดต่อผู้ดูแลระบบหากปัญหายังคงมีอยู่</p>
+    `;
+  }
+
+  // Auto close window after 3 seconds
+  setTimeout(() => globalThis.close(), 3000);
 }
 
 // แสดงข้อมูล Snapshot ที่ถอดรหัสได้จาก Token
@@ -178,12 +249,7 @@ function mergeData(snapshot, apiData) {
 // จัดการข้อผิดพลาดทั่วไป
 function handleError(err) {
   const isExpired = err.message.includes("หมดอายุ");
-  showResult(
-    isExpired ? "warning" : "error",
-    isExpired ? "ลิงก์หมดอายุ" : "ข้อผิดพลาด",
-    err.message,
-    true
-  );
+  showError(isExpired ? "ลิงก์หมดอายุ" : "ข้อผิดพลาด", err.message);
 }
 
 // ==============================================================================
@@ -212,7 +278,7 @@ async function initialize() {
   const { config } = getRuntimeConfig();
   const token = getToken();
   if (!token) {
-    showResult("error", "ข้อผิดพลาด", "ไม่พบ Token หรือลิงก์ไม่ถูกต้อง");
+    showError("ข้อผิดพลาด", "ไม่พบ Token หรือลิงก์ไม่ถูกต้อง");
     return;
   }
   showLoading();
@@ -251,7 +317,7 @@ async function processRequest(token, action, config, reason = "") {
       throw new Error(res.error || "ดำเนินการล้มเหลว");
     }
 
-    showResult(
+    showSuccess(
       action === "approve" ? "อนุมัติสำเร็จ" : "ปฏิเสธสำเร็จ",
       action === "approve"
         ? "อนุมัติคำขอเรียบร้อยแล้ว"
