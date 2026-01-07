@@ -255,20 +255,127 @@ function handleError(err) {
 // ==============================================================================
 //                ฟังก์ชันหลัก (Main Logic)
 // ==============================================================================
+
+// ==============================================================================
+// ฟังก์ชัน Modal (Custom Confirmation) - เพิ่มตรงนี้
+function ensureModalExists() {
+  if (document.getElementById("confirm-modal")) return;
+
+  const modalHtml = `
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 opacity-0 pointer-events-none transition-opacity duration-300" aria-hidden="true" style="backdrop-filter: blur(4px);">
+      <div id="confirm-modal-content" class="w-full max-w-sm transform rounded-2xl bg-white p-6 shadow-2xl transition-all scale-95 opacity-0">
+        <div class="mb-4 text-center">
+          <div id="modal-icon-container" class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+             <span id="modal-icon">ℹ️</span>
+          </div>
+          <h3 id="modal-title" class="text-lg font-bold text-slate-900"></h3>
+          <p id="modal-message" class="mt-2 text-sm text-slate-500"></p>
+        </div>
+        
+        <div id="modal-reason-box" class="mb-6 hidden text-left">
+          <label class="mb-1.5 block text-sm font-medium text-slate-700">เหตุผลที่ปฏิเสธ (ถ้ามี)</label>
+          <textarea id="modal-reason" rows="3" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-red-500 focus:ring-red-500 outline-none transition-all resize-none" placeholder="ระบุเหตุผล..."></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button id="modal-cancel" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">ยกเลิก</button>
+          <button id="modal-confirm" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all transform active:scale-95"></button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
+
+function showConfirmModal(action, onConfirm) {
+  ensureModalExists();
+  const modal = document.getElementById("confirm-modal");
+  const modalContent = document.getElementById("confirm-modal-content");
+  const titleEl = document.getElementById("modal-title");
+  const msgEl = document.getElementById("modal-message");
+  const iconContainer = document.getElementById("modal-icon-container");
+  const iconEl = document.getElementById("modal-icon");
+  const reasonBox = document.getElementById("modal-reason-box");
+  const reasonInput = document.getElementById("modal-reason");
+  const btnConfirm = document.getElementById("modal-confirm");
+  const btnCancel = document.getElementById("modal-cancel");
+
+  const isApprove = action === "approve";
+
+  // Set Content
+  titleEl.textContent = isApprove ? "ยืนยันการอนุมัติ" : "ยืนยันการปฏิเสธ";
+  msgEl.textContent = isApprove
+    ? "คุณต้องการอนุมัติคำขอลืมลงเวลานี้ใช่หรือไม่?"
+    : "คุณต้องการปฏิเสธคำขอลืมลงเวลานี้ใช่หรือไม่?";
+
+  // Set Styles & Icon
+  if (isApprove) {
+    iconContainer.className =
+      "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100";
+    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+    reasonBox.classList.add("hidden");
+    btnConfirm.className =
+      "rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-blue-200";
+    btnConfirm.textContent = "ยืนยันอนุมัติ";
+  } else {
+    iconContainer.className =
+      "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100";
+    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+    reasonBox.classList.remove("hidden");
+    reasonInput.value = "";
+    btnConfirm.className =
+      "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 shadow-red-200";
+    btnConfirm.textContent = "ยืนยันปฏิเสธ";
+  }
+
+  // Show Modal
+  modal.classList.remove("opacity-0", "pointer-events-none");
+  setTimeout(() => {
+    modalContent.classList.remove("scale-95", "opacity-0");
+    modalContent.classList.add("scale-100", "opacity-100");
+    if (!isApprove) setTimeout(() => reasonInput.focus(), 100);
+  }, 10);
+
+  // Close Handler
+  const close = () => {
+    modalContent.classList.remove("scale-100", "opacity-100");
+    modalContent.classList.add("scale-95", "opacity-0");
+    modal.classList.add("opacity-0", "pointer-events-none");
+    setTimeout(() => {
+      btnConfirm.onclick = null;
+      btnCancel.onclick = null;
+    }, 300);
+  };
+
+  btnCancel.onclick = close;
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
+
+  btnConfirm.onclick = () => {
+    const reason = isApprove ? null : reasonInput.value.trim();
+    close();
+    // Wait for animation to finish slightly before processing
+    setTimeout(() => onConfirm(reason), 300);
+  };
+}
+
 // ผูกปุ่มอนุมัติ/ปฏิเสธกับฟังก์ชัน
 function bindButtons(token, config) {
   const btnApprove = document.getElementById("btn-approve");
   const btnReject = document.getElementById("btn-reject");
   if (btnApprove) {
     btnApprove.addEventListener("click", () =>
-      processRequest(token, "approve", config)
+      showConfirmModal("approve", (reason) => {
+        processRequest(token, "approve", config, reason);
+      })
     );
   }
   if (btnReject) {
     btnReject.addEventListener("click", () => {
-      const reason = prompt("กรุณาระบุเหตุผลที่ปฏิเสธ (ถ้ามี):");
-      if (reason === null) return;
-      processRequest(token, "reject", config, reason);
+      showConfirmModal("reject", (reason) => {
+        processRequest(token, "reject", config, reason);
+      });
     });
   }
 }
@@ -300,9 +407,6 @@ document.addEventListener("DOMContentLoaded", initialize);
 
 // ประมวลผลคำขออนุมัติ/ปฏิเสธ
 async function processRequest(token, action, config, reason = "") {
-  if (!confirm(`ยืนยันการ ${action === "approve" ? "อนุมัติ" : "ปฏิเสธ"}?`))
-    return;
-
   showLoading();
 
   try {
