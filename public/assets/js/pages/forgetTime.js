@@ -195,6 +195,19 @@ function setupProfileUI(liff, profile) {
   }
 }
 
+// Helper to convert file to Base64
+function convertFileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () =>
+      reject(
+        new Error(`File reading failed: ${reader.error?.message || "Unknown"}`)
+      );
+  });
+}
+
 // ตั้งค่าการส่งฟอร์มลืมบันทึกเวลา
 function setupFormSubmission(config) {
   const form = document.getElementById("forgetTimeForm");
@@ -232,26 +245,35 @@ function setupFormSubmission(config) {
     }
 
     setLoading(true);
-    // statusText UI updates removed per request
 
     try {
-      // สร้าง FormData สำหรับส่งไฟล์
-      const formData = new FormData();
-      formData.append("timestampType", payload.timestamp_type);
-      formData.append("forgetDate", payload.date);
-      formData.append("forgetTime", payload.time);
-      formData.append("reason", payload.reason);
-      formData.append("lineUserId", profile.userId);
-
+      // Logic การแปลงไฟล์เป็น Base64
+      let evidenceBase64 = null;
       const evidenceInput = document.getElementById("evidence");
       if (evidenceInput.files.length > 0) {
-        formData.append("evidence", evidenceInput.files[0]);
+        const file = evidenceInput.files[0];
+        // Check size (10MB)
+        if (file.size > 10 * 1024 * 1024)
+          throw new Error("ไฟล์ขนาดใหญ่เกินไป (สูงสุด 10MB)");
+
+        evidenceBase64 = await convertFileToBase64(file);
       }
+
+      // สร้าง JSON Body (ตรงกับ Backend Schema)
+      const body = {
+        lineUserId: profile.userId,
+        type: payload.timestamp_type,
+        date: payload.date,
+        time: payload.time,
+        reason: payload.reason,
+        evidence: evidenceBase64,
+      };
+
       const res = await apiRequest({
         apiBaseUrl: config.apiBaseUrl,
-        path: config.endpoints.forgetTime,
+        path: config.endpoints.forgetRequest,
         method: "POST",
-        body: formData,
+        body: body,
         idToken,
       });
 
@@ -273,7 +295,6 @@ function setupFormSubmission(config) {
         title: "ส่งแล้ว",
         message: "คำขอลืมเวลา (forget-time) ของคุณถูกส่งเรียบร้อยแล้ว",
       });
-      // statusText UI updates removed per request
 
       // ส่งข้อความผ่าน LIFF
       await trySendMessage("ส่งคำขอ forget-time สำเร็จแล้ว");
@@ -283,13 +304,19 @@ function setupFormSubmission(config) {
       // ซ่อน preview ถ้ามี
       const previewContainer = document.getElementById("previewContainer");
       if (previewContainer) previewContainer.classList.add("hidden");
+
+      // Close window
+      setTimeout(() => {
+        if (globalThis.liff?.isInClient()) {
+          globalThis.liff.closeWindow();
+        }
+      }, 2000);
     } catch (err) {
       showToast({
         type: "error",
         title: "Unexpected error",
         message: err?.message || String(err),
       });
-      // statusText UI updates removed per request
     } finally {
       setLoading(false);
     }

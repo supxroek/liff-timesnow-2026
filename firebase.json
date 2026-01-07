@@ -5,7 +5,8 @@
     "rewrites": [
       { "source": "/register", "destination": "/pages/register.html" },
       { "source": "/forget-time", "destination": "/pages/forget-time.html" },
-      { "source": "/approval", "destination": "/pages/approve.html" }
+      { "source": "/approve-register", "destination": "/pages/approve-register.html" },
+      { "source": "/approve-forget", "destination": "/pages/approve-forget.html" }
     ],
     "headers": [
       {

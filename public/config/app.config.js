@@ -60,7 +60,12 @@ export const DEFAULT_APP_CONFIG = {
   endpoints: {
     company: "/liff/company",
     register: "/liff/register",
+    registerCheckStatus: "/liff/register/check-status",
+    registerApprove: "/liff/register/approve",
     forgetTime: "/liff/forget-time",
+    forgetRequest: "/liff/forget-request",
+    forgetRequestInfo: "/liff/forget-request/info",
+    forgetRequestApprove: "/liff/forget-request/approve",
   },
   requireLogin: true,
   debug: false,

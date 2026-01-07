@@ -1,4 +1,4 @@
-import { getBaseUrl } from "../../../config/app.config.js";
+import { getRuntimeConfig } from "../core/config.js";
 import { apiRequest } from "../core/api.js";
 
 // ==============================================================================
@@ -264,10 +264,10 @@ function setButtonsDisabled(disabled) {
 
 // ฟังก์ชันตรวจสอบสถานะการลงทะเบียน
 async function callCheckStatusApi(token) {
-  const baseUrl = getBaseUrl();
+  const { config } = getRuntimeConfig();
   return apiRequest({
-    apiBaseUrl: baseUrl,
-    path: "/liff/register/check-status",
+    apiBaseUrl: config.apiBaseUrl,
+    path: config.endpoints.registerCheckStatus,
     method: "POST",
     body: { token },
   });
@@ -275,13 +275,13 @@ async function callCheckStatusApi(token) {
 
 // ฟังก์ชันอนุมัติ/ปฏิเสธ
 async function callApproveApi(token, action, reason = null) {
-  const baseUrl = getBaseUrl();
+  const { config } = getRuntimeConfig();
   const body = { token, action };
   if (reason) body.reason = reason;
 
   return apiRequest({
-    apiBaseUrl: baseUrl,
-    path: "/liff/register/approve",
+    apiBaseUrl: config.apiBaseUrl,
+    path: config.endpoints.registerApprove,
     method: "POST",
     body,
   });

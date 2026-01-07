@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>อนุมัติการลงทะเบียน - Time Now</title>
+    <title>อนุมัติคำขอลืมบันทึกเวลา - Time Now</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -46,36 +46,53 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-brand-600" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
         </div>
 
         <h1 id="main-title" class="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 sm:mb-2 leading-tight">
-            ตรวจสอบคำขอลงทะเบียน</h1>
+            ตรวจสอบคำขอลืมลงเวลา</h1>
         <p id="subtitle" class="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-5 leading-relaxed">
-            กรุณาเลือกดำเนินการสำหรับคำขอลงทะเบียนนี้</p>
+            กรุณารอสักครู่...</p>
 
-        <!-- User Info (will be populated by JS) -->
+        <!-- Request Info -->
         <div id="user-info"
-            class="hidden bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5 border border-slate-200/50 shadow-sm">
+            class="hidden bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5 border border-slate-200/50 shadow-sm text-left">
             <div class="space-y-2 sm:space-y-2.5">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
                     <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">ชื่อ-สกุล</span>
-                    <span id="info-name" class="text-sm sm:text-base font-semibold text-slate-900 break-words">-</span>
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ชื่อพนักงาน</span>
+                    <span id="info-name"
+                        class="text-sm sm:text-base font-semibold text-slate-900 break-words text-right">-</span>
                 </div>
                 <div class="h-px bg-slate-200"></div>
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
                     <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">เลขบัตรประชาชน</span>
-                    <span id="info-idcard" class="text-sm sm:text-base font-mono font-semibold text-slate-900">-</span>
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">วันที่</span>
+                    <span id="info-date" class="text-sm sm:text-base font-semibold text-slate-900 text-right">-</span>
                 </div>
                 <div class="h-px bg-slate-200"></div>
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
                     <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">วันที่เริ่มงาน</span>
-                    <span id="info-startdate" class="text-sm sm:text-base font-semibold text-brand-700">-</span>
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เวลา</span>
+                    <span id="info-time" class="text-sm sm:text-base font-semibold text-brand-600 text-right">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
+                    <span
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ประเภท</span>
+                    <span id="info-type" class="text-sm sm:text-base font-semibold text-slate-900 text-right">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
+                    <span
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เหตุผล</span>
+                    <span id="info-reason" class="text-sm sm:text-base text-slate-700 text-right">-</span>
                 </div>
             </div>
         </div>
@@ -100,24 +117,24 @@
             </button>
         </div>
 
-        <!-- Loading State -->
-        <div id="loading" class="hidden flex flex-col items-center justify-center py-6 sm:py-8">
-            <div class="relative">
-                <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 border-slate-200"></div>
-                <div
-                    class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 border-brand-600 border-t-transparent absolute top-0 left-0">
-                </div>
-            </div>
-            <p class="mt-3 text-xs sm:text-sm text-slate-500 animate-pulse">กำลังประมวลผล...</p>
+        <!-- Loading -->
+        <div id="loading" class="hidden flex flex-col items-center justify-center py-4">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-500 mb-3"></div>
+            <p class="text-slate-500 text-sm animate-pulse">กำลังประมวลผล...</p>
         </div>
 
-        <!-- Result State -->
-        <div id="result" class="hidden">
-            <!-- Result content will be injected here -->
+        <!-- Result -->
+        <div id="result" class="hidden py-4">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <p id="result-message" class="text-lg font-medium text-slate-900">ดำเนินการเรียบร้อยแล้ว</p>
         </div>
     </div>
 
-    <script type="module" src="../assets/js/pages/approve.js"></script>
+    <script type="module" src="../assets/js/pages/approve-forget.js"></script>
 </body>
 
 </html>

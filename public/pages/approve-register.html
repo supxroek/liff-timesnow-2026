@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อนุมัติการลงทะเบียน - Time Now</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body
+    class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen flex items-center justify-center p-3 sm:p-4 font-sans text-slate-900">
+    <div
+        class="bg-white rounded-2xl shadow-xl p-5 sm:p-6 md:p-7 max-w-lg w-full text-center ring-1 ring-slate-200/50 backdrop-blur-sm">
+        <!-- Header Icon -->
+        <div id="header-icon" class="mb-4 sm:mb-5 flex justify-center">
+            <div
+                class="w-16 h-16 sm:w-20 sm:h-20 bg-brand-100 rounded-full flex items-center justify-center shadow-lg shadow-brand-200/50 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-brand-600" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+
+        <h1 id="main-title" class="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 sm:mb-2 leading-tight">
+            ตรวจสอบคำขอลงทะเบียน</h1>
+        <p id="subtitle" class="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-5 leading-relaxed">
+            กรุณาเลือกดำเนินการสำหรับคำขอลงทะเบียนนี้</p>
+
+        <!-- User Info (will be populated by JS) -->
+        <div id="user-info"
+            class="hidden bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5 border border-slate-200/50 shadow-sm">
+            <div class="space-y-2 sm:space-y-2.5">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+                    <span
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">ชื่อ-สกุล</span>
+                    <span id="info-name" class="text-sm sm:text-base font-semibold text-slate-900 break-words">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+                    <span
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">เลขบัตรประชาชน</span>
+                    <span id="info-idcard" class="text-sm sm:text-base font-mono font-semibold text-slate-900">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-1">
+                    <span
+                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">วันที่เริ่มงาน</span>
+                    <span id="info-startdate" class="text-sm sm:text-base font-semibold text-brand-700">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="action-buttons" class="hidden flex flex-col gap-2 sm:flex-row sm:gap-3">
+            <button id="btn-approve"
+                class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 active:scale-95 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-600/40">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-sm sm:text-base">อนุมัติ</span>
+            </button>
+            <button id="btn-reject"
+                class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:scale-95 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-600/40">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="text-sm sm:text-base">ปฏิเสธ</span>
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden flex flex-col items-center justify-center py-6 sm:py-8">
+            <div class="relative">
+                <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 border-slate-200"></div>
+                <div
+                    class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 border-brand-600 border-t-transparent absolute top-0 left-0">
+                </div>
+            </div>
+            <p class="mt-3 text-xs sm:text-sm text-slate-500 animate-pulse">กำลังประมวลผล...</p>
+        </div>
+
+        <!-- Result State -->
+        <div id="result" class="hidden">
+            <!-- Result content will be injected here -->
+        </div>
+    </div>
+
+    <script type="module" src="../assets/js/pages/approve-register.js"></script>
+</body>
+
+</html>
