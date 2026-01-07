@@ -2,27 +2,51 @@ import { getRuntimeConfig } from "../core/config.js";
 import { apiRequest } from "../core/api.js";
 import { showToast } from "../core/ui.js";
 
-// Helper Functions
+// ==============================================================================
+//                ฟังก์ชันช่วยเหลือ (Helpers)
+// ==============================================================================
+// Helper: ดึง token จาก URL query parameters
 function getToken() {
   const urlParams = new URLSearchParams(globalThis.location.search);
   return urlParams.get("token");
 }
 
+// Helper: ถอดรหัส JWT token แบบง่ายๆ (ไม่ตรวจสอบลายเซ็นต์)
+function decodeToken(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replaceAll("-", "+").replaceAll("_", "/");
+    const jsonPayload = decodeURIComponent(
+      globalThis
+        .atob(base64)
+        .split("")
+        .map(
+          (c) => "%" + ("00" + (c.codePointAt(0) ?? 0).toString(16)).slice(-2)
+        )
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+// Helper: ตั้งค่าข้อความในองค์ประกอบ HTML
 function setText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text || "-";
 }
-
+// Helper: แสดง/ซ่อน องค์ประกอบ HTML
 function showElement(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove("hidden");
 }
-
+// Helper: แสดง/ซ่อน องค์ประกอบ HTML
 function hideElement(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add("hidden");
 }
-
+// แสดงสถานะกำลังโหลด
 function showLoading() {
   hideElement("action-buttons");
   hideElement("user-info");
@@ -31,7 +55,7 @@ function showLoading() {
   setText("main-title", "กำลังดำเนินการ...");
   setText("subtitle", "กรุณารอสักครู่");
 }
-
+// แสดงข้อมูลคำขอ
 function showInfo(data) {
   hideElement("loading");
   hideElement("result");
@@ -67,6 +91,7 @@ function showInfo(data) {
   }
 }
 
+// แสดงผลลัพธ์การอนุมัติ/ปฏิเสธ
 function showResult(type, title, message, keepInfo = false) {
   hideElement("loading");
   hideElement("action-buttons");
@@ -111,59 +136,103 @@ function showResult(type, title, message, keepInfo = false) {
   setText("subtitle", "ปิดหน้าต่างนี้ได้เลย");
 }
 
-// Main Logic
-document.addEventListener("DOMContentLoaded", async () => {
+// แสดงข้อมูล Snapshot ที่ถอดรหัสได้จาก Token
+function displaySnapshot(snapshot) {
+  if (snapshot.employeeName) setText("info-name", snapshot.employeeName);
+  if (snapshot.date) setText("info-date", snapshot.date);
+  if (snapshot.currentTime) setText("info-current-time", snapshot.currentTime);
+  if (snapshot.time) setText("info-time", snapshot.time);
+  if (snapshot.type) setText("info-type", snapshot.type);
+  if (snapshot.reason) setText("info-reason", snapshot.reason);
+  showElement("user-info");
+}
+
+// ดึงข้อมูลคำขอจาก API
+async function fetchRequestInfo(token, config) {
+  const res = await apiRequest({
+    apiBaseUrl: config.apiBaseUrl,
+    path: config.endpoints.forgetRequestInfo,
+    method: "POST",
+    body: { token },
+  });
+  if (!res.ok) {
+    throw new Error(res.error || "ไม่สามารถดึงข้อมูลได้");
+  }
+  return res.data.data || res.data;
+}
+
+// รวมข้อมูลจาก Snapshot และ API
+function mergeData(snapshot, apiData) {
+  return {
+    ...apiData,
+    employeeName: snapshot?.employeeName || apiData.employeeName,
+    date: snapshot?.date || apiData.date,
+    currentTime: snapshot?.currentTime || apiData.currentTime,
+    time: snapshot?.time || apiData.time,
+    type: snapshot?.type || apiData.type,
+    reason: snapshot?.reason || apiData.reason,
+    status: apiData.status,
+  };
+}
+
+// จัดการข้อผิดพลาดทั่วไป
+function handleError(err) {
+  const isExpired = err.message.includes("หมดอายุ");
+  showResult(
+    isExpired ? "warning" : "error",
+    isExpired ? "ลิงก์หมดอายุ" : "ข้อผิดพลาด",
+    err.message,
+    true
+  );
+}
+
+// ==============================================================================
+//                ฟังก์ชันหลัก (Main Logic)
+// ==============================================================================
+// ผูกปุ่มอนุมัติ/ปฏิเสธกับฟังก์ชัน
+function bindButtons(token, config) {
+  const btnApprove = document.getElementById("btn-approve");
+  const btnReject = document.getElementById("btn-reject");
+  if (btnApprove) {
+    btnApprove.addEventListener("click", () =>
+      processRequest(token, "approve", config)
+    );
+  }
+  if (btnReject) {
+    btnReject.addEventListener("click", () => {
+      const reason = prompt("กรุณาระบุเหตุผลที่ปฏิเสธ (ถ้ามี):");
+      if (reason === null) return;
+      processRequest(token, "reject", config, reason);
+    });
+  }
+}
+
+// Main Logic: เริ่มต้นเมื่อโหลดหน้าเพจ
+async function initialize() {
   const { config } = getRuntimeConfig();
   const token = getToken();
-
   if (!token) {
     showResult("error", "ข้อผิดพลาด", "ไม่พบ Token หรือลิงก์ไม่ถูกต้อง");
     return;
   }
-
   showLoading();
-
-  try {
-    // Check Status / Get Info
-    const res = await apiRequest({
-      apiBaseUrl: config.apiBaseUrl,
-      path: config.endpoints.forgetRequestInfo,
-      method: "POST",
-      body: { token },
-    });
-
-    if (!res.ok) {
-      throw new Error(res.error || "ไม่สามารถดึงข้อมูลได้");
-    }
-
-    // API returns { status: "success", data: { ... } }
-    showInfo(res.data.data || res.data);
-  } catch (err) {
-    // Handle specific error messages if needed, e.g. "expired"
-    const isExpired = err.message.includes("หมดอายุ");
-    showResult(
-      isExpired ? "warning" : "error",
-      isExpired ? "ลิงก์หมดอายุ" : "ข้อผิดพลาด",
-      err.message
-    );
+  const snapshot = decodeToken(token);
+  if (snapshot) {
+    displaySnapshot(snapshot);
   }
+  try {
+    const apiData = await fetchRequestInfo(token, config);
+    const finalData = mergeData(snapshot, apiData);
+    showInfo(finalData);
+  } catch (err) {
+    handleError(err);
+  }
+  bindButtons(token, config);
+}
 
-  // Bind Buttons
-  const btnApprove = document.getElementById("btn-approve");
-  const btnReject = document.getElementById("btn-reject");
+document.addEventListener("DOMContentLoaded", initialize);
 
-  if (btnApprove)
-    btnApprove.addEventListener("click", () =>
-      processRequest(token, "approve", config)
-    );
-  if (btnReject)
-    btnReject.addEventListener("click", () => {
-      const reason = prompt("กรุณาระบุเหตุผลที่ปฏิเสธ (ถ้ามี):");
-      if (reason === null) return; // Cancel
-      processRequest(token, "reject", config, reason);
-    });
-});
-
+// ประมวลผลคำขออนุมัติ/ปฏิเสธ
 async function processRequest(token, action, config, reason = "") {
   if (!confirm(`ยืนยันการ ${action === "approve" ? "อนุมัติ" : "ปฏิเสธ"}?`))
     return;
