@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>อนุมัติคำขอลืมบันทึกเวลา - Time Now</title>
+
+    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -35,104 +37,116 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body
-    class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen flex items-center justify-center p-3 sm:p-4 font-sans text-slate-900">
-    <div
-        class="bg-white rounded-2xl shadow-xl p-5 sm:p-6 md:p-7 max-w-lg w-full text-center ring-1 ring-slate-200/50 backdrop-blur-sm">
-        <!-- Header Icon -->
-        <div id="header-icon" class="mb-4 sm:mb-5 flex justify-center">
-            <div
-                class="w-16 h-16 sm:w-20 sm:h-20 bg-brand-100 rounded-full flex items-center justify-center shadow-lg shadow-brand-200/50 transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-brand-600" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        </div>
-
-        <h1 id="main-title" class="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 sm:mb-2 leading-tight">
-            ตรวจสอบคำขอลืมลงเวลา</h1>
-        <p id="subtitle" class="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-5 leading-relaxed">
-            กรุณารอสักครู่...</p>
-
-        <!-- Request Info -->
-        <div id="user-info"
-            class="hidden bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5 border border-slate-200/50 shadow-sm text-left">
-            <div class="space-y-2 sm:space-y-2.5">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
-                    <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ชื่อพนักงาน</span>
-                    <span id="info-name"
-                        class="text-sm sm:text-base font-semibold text-slate-900 break-words text-right">-</span>
-                </div>
-                <div class="h-px bg-slate-200"></div>
-
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
-                    <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">วันที่</span>
-                    <span id="info-date" class="text-sm sm:text-base font-semibold text-slate-900 text-right">-</span>
-                </div>
-                <div class="h-px bg-slate-200"></div>
-
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
-                    <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เวลา</span>
-                    <span id="info-time" class="text-sm sm:text-base font-semibold text-brand-600 text-right">-</span>
-                </div>
-                <div class="h-px bg-slate-200"></div>
-
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
-                    <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ประเภท</span>
-                    <span id="info-type" class="text-sm sm:text-base font-semibold text-slate-900 text-right">-</span>
-                </div>
-                <div class="h-px bg-slate-200"></div>
-
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-1">
-                    <span
-                        class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เหตุผล</span>
-                    <span id="info-reason" class="text-sm sm:text-base text-slate-700 text-right">-</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div id="action-buttons" class="hidden flex flex-col gap-2 sm:flex-row sm:gap-3">
-            <button id="btn-approve"
-                class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 active:scale-95 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-600/40">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span class="text-sm sm:text-base">อนุมัติ</span>
-            </button>
-            <button id="btn-reject"
-                class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:scale-95 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-600/40">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span class="text-sm sm:text-base">ปฏิเสธ</span>
-            </button>
-        </div>
-
-        <!-- Loading -->
-        <div id="loading" class="hidden flex flex-col items-center justify-center py-4">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-500 mb-3"></div>
-            <p class="text-slate-500 text-sm animate-pulse">กำลังประมวลผล...</p>
-        </div>
-
-        <!-- Result -->
-        <div id="result" class="hidden py-4">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
-                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-            </div>
-            <p id="result-message" class="text-lg font-medium text-slate-900">ดำเนินการเรียบร้อยแล้ว</p>
-        </div>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-brand-100 selection:text-brand-900">
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute -left-[10%] -top-[10%] h-[500px] w-[500px] rounded-full bg-brand-100/50 blur-3xl"></div>
+        <div class="absolute -right-[10%] top-[20%] h-[400px] w-[400px] rounded-full bg-blue-100/50 blur-3xl"></div>
     </div>
+
+    <main class="mx-auto w-full max-w-md px-4 py-8 sm:px-6 relative">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden">
+                <img src="../assets/images/logo_timenow_bottom.png" alt="Logo" class="h-20 w-auto object-contain" />
+            </div>
+            <h1 id="main-title" class="text-2xl font-bold tracking-tight text-slate-900">ตรวจสอบคำขอลืมบันทึกเวลา</h1>
+            <p id="subtitle" class="mt-2 text-sm text-slate-500">กรุณารอสักครู่...</p>
+        </header>
+
+        <section
+            class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100">
+
+            <!-- User Info -->
+            <div id="user-info" class="hidden mb-6 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span
+                        class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ชื่อพนักงาน</span>
+                    <span id="info-name"
+                        class="text-sm font-semibold text-slate-900 break-words text-right sm:text-left">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">วันที่</span>
+                    <span id="info-date" class="text-sm font-semibold text-slate-900 text-right sm:text-left">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span
+                        class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เวลาเดิม</span>
+                    <span id="info-current-time"
+                        class="text-sm font-semibold text-slate-500 text-right sm:text-left">-</span>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span
+                        class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เวลาที่ขอ</span>
+                    <span id="info-time" class="text-sm font-semibold text-brand-600 text-right sm:text-left">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">ประเภท</span>
+                    <span id="info-type" class="text-sm font-semibold text-slate-900 text-right sm:text-left">-</span>
+                </div>
+                <div class="h-px bg-slate-200"></div>
+
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wide min-w-[80px]">เหตุผล</span>
+                    <span id="info-reason" class="text-sm text-slate-700 text-right sm:text-left">-</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden flex flex-col items-center justify-center py-8">
+                <div class="relative">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-100"></div>
+                    <div
+                        class="animate-spin rounded-full h-12 w-12 border-4 border-brand-600 border-t-transparent absolute top-0 left-0">
+                    </div>
+                </div>
+                <p class="mt-4 text-sm text-slate-500 animate-pulse">กำลังประมวลผล...</p>
+            </div>
+
+            <!-- Result State -->
+            <div id="result" class="hidden text-center py-2">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 mb-4">
+                    <svg class="h-8 w-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                </div>
+                <p id="result-message" class="text-lg font-medium text-slate-900 mb-2"></p>
+                <div id="result-submessage" class="text-sm text-slate-500"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="hidden flex flex-col gap-3 sm:flex-row">
+                <button id="btn-approve"
+                    class="flex-1 group relative flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-green-500/30 transition-all hover:bg-green-700 hover:shadow-green-500/40 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>อนุมัติ</span>
+                </button>
+                <button id="btn-reject"
+                    class="flex-1 group relative flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/30 transition-all hover:bg-red-700 hover:shadow-red-500/40 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>ปฏิเสธ</span>
+                </button>
+            </div>
+        </section>
+
+        <footer class="mt-8 text-center">
+            <p class="text-xs text-slate-400">
+                &copy; 2026 TimesNow. All rights reserved.
+            </p>
+        </footer>
+    </main>
 
     <script type="module" src="../assets/js/pages/approve-forget.js"></script>
 </body>
