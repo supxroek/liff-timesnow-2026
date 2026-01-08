@@ -26,7 +26,332 @@ function requireDayjs() {
 
 // แปลงค่าจาก input วันที่ (YYYY-MM-DD) เป็น ISO string
 function toIsoFromDateInput(yyyyMmDd) {
+  if (!yyyyMmDd) return "";
   return globalThis.dayjs(yyyyMmDd).startOf("day").toISOString();
+}
+
+// Global state for Missing Timestamps
+let missingData = [];
+let calendarState = {
+  collapsed: false,
+  selectedDate: null,
+  currentDisplayDate: null, // Dayjs object for month view
+};
+
+// ==============================================================================
+// Smart Calendar Logic
+// ==============================================================================
+
+async function fetchMissingTimestamps(lineUserId) {
+  const loadingEl = document.getElementById("initial-loading");
+  const emptyEl = document.getElementById("empty-state");
+  const mainEl = document.getElementById("main-content");
+
+  // Reset state
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+  mainEl.classList.add("hidden");
+
+  try {
+    const { config } = getRuntimeConfig();
+    const idToken = await getIdTokenSafe();
+
+    const response = await apiRequest({
+      apiBaseUrl: config.apiBaseUrl,
+      path: "/liff/forget-request/missing",
+      method: "POST",
+      body: { lineUserId },
+      idToken: idToken,
+    });
+
+    if (response.ok && response.status === 200) {
+      missingData = response.data.data ? response.data.data : response.data;
+
+      // Check if there are any missing items
+      const hasMissing = missingData.some((item) => item.status === "missing");
+
+      if (hasMissing) {
+        // Init calendar state with today
+        calendarState.currentDisplayDate = globalThis.dayjs();
+        renderCalendar();
+        renderMissingSummary();
+        mainEl.classList.remove("hidden");
+
+        // Optional: Auto-select first missing date logic could go here
+        // But for now, let user pick
+      } else {
+        // Show Empty State (Success)
+        emptyEl.classList.remove("hidden");
+      }
+    } else {
+      console.error("Fetch missing failed:", response);
+      // On error (e.g. network), showing empty/error state is better than hanging loading
+      showToast({
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถดึงข้อมูลย้อนหลังได้",
+        type: "error",
+      });
+    }
+  } catch (err) {
+    console.error("Fetch missing error:", err);
+    showToast({
+      title: "เกิดข้อผิดพลาด",
+      message: "ไม่สามารถดึงข้อมูลย้อนหลังได้",
+      type: "error",
+    });
+  } finally {
+    loadingEl.classList.add("hidden");
+  }
+}
+
+function renderCalendar() {
+  const grid = document.getElementById("calendar-grid");
+  const monthLabel = document.getElementById("current-month-label");
+  if (!grid) return;
+
+  // Insert Headers if missing (re-render safe)
+  grid.innerHTML = `
+        <div class="text-slate-400 font-medium py-2">อา</div>
+        <div class="text-slate-400 font-medium py-2">จ</div>
+        <div class="text-slate-400 font-medium py-2">อ</div>
+        <div class="text-slate-400 font-medium py-2">พ</div>
+        <div class="text-slate-400 font-medium py-2">พฤ</div>
+        <div class="text-slate-400 font-medium py-2">ศ</div>
+        <div class="text-slate-400 font-medium py-2">ส</div>
+    `;
+
+  const today = globalThis.dayjs();
+  // Valid Range: [today-30, today]
+  const validStart = today.subtract(30, "day").startOf("day");
+  const validEnd = today.endOf("day");
+
+  // Display Month Logic
+  const displayDate = calendarState.currentDisplayDate || today;
+  if (monthLabel) {
+    // Thai Month Names
+    const thaiMonths = [
+      "ม.ค.",
+      "ก.พ.",
+      "มี.ค.",
+      "เม.ย.",
+      "พ.ค.",
+      "มิ.ย.",
+      "ก.ค.",
+      "ส.ค.",
+      "ก.ย.",
+      "ต.ค.",
+      "พ.ย.",
+      "ธ.ค.",
+    ];
+    monthLabel.textContent = `${thaiMonths[displayDate.month()]} ${
+      displayDate.year() + 543
+    }`;
+  }
+
+  // Generate Month Grid
+  const startOfMonth = displayDate.startOf("month");
+  const daysInMonth = displayDate.daysInMonth();
+  const startDayOfWeek = startOfMonth.day(); // 0 (Sun)
+
+  // Data Map
+  const dataMap = mapMissingDataToDates(missingData);
+
+  // Empty slots for start offset
+  for (let i = 0; i < startDayOfWeek; i++) {
+    const empty = document.createElement("div");
+    grid.appendChild(empty);
+  }
+
+  // Days
+  for (let i = 1; i <= daysInMonth; i++) {
+    const current = startOfMonth.date(i);
+    const dateStr = current.format("YYYY-MM-DD");
+    const items = dataMap[dateStr] || [];
+
+    // Valid range check
+    const isValidRange =
+      (current.isAfter(validStart) || current.isSame(validStart, "day")) &&
+      (current.isBefore(validEnd) || current.isSame(validEnd, "day"));
+
+    const btn = createDayButton(i, dateStr, items, isValidRange);
+    grid.appendChild(btn);
+  }
+
+  // Wire buttons
+  setupCalendarNav();
+}
+
+function mapMissingDataToDates(data) {
+  const map = {};
+  data.forEach((item) => {
+    if (!map[item.date]) map[item.date] = [];
+    map[item.date].push(item);
+  });
+  return map;
+}
+
+function createDayButton(dayNumber, dateStr, items, isValidRange) {
+  let status = "disabled"; // Default disabled if out of range
+
+  if (isValidRange) {
+    status = "normal";
+    if (items.some((x) => x.status === "missing")) status = "missing";
+    else if (items.some((x) => x.status === "pending")) status = "pending";
+  }
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = `relative flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square text-xs font-medium`;
+
+  if (status === "missing") {
+    btn.className += ` bg-red-50 text-red-700 hover:bg-red-100 ring-1 ring-inset ring-red-200 font-bold`;
+    btn.innerHTML = `<span class="z-10">${dayNumber}</span><span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>`;
+    btn.onclick = () => selectDate(dateStr, items);
+  } else if (status === "pending") {
+    btn.className += ` bg-yellow-50 text-yellow-700 hover:bg-yellow-100 ring-1 ring-inset ring-yellow-200`;
+    btn.innerHTML = `<span class="z-10">${dayNumber}</span>`;
+    btn.onclick = () => {
+      showToast({
+        type: "info",
+        title: "รออนุมัติ",
+        message: "รายการในวันนี้อยู่ระหว่างการตรวจสอบ",
+      });
+    };
+  } else if (status === "normal") {
+    // Only show "Normal" if it's within scannable range
+    btn.className += ` text-slate-400 hover:bg-slate-50`;
+    btn.innerHTML = `<span class="z-10">${dayNumber}</span>`;
+    btn.onclick = () => {
+      showToast({
+        type: "success",
+        title: "สมบูรณ์",
+        message: "ไม่มีรายการตกหล่นในวันนี้",
+      });
+    };
+  } else {
+    // Disabled (Future or Older than 30 days)
+    btn.className += ` text-slate-200 cursor-default`;
+    btn.innerHTML = `<span class="z-10">${dayNumber}</span>`;
+    btn.disabled = true;
+  }
+  return btn;
+}
+
+function setupCalendarNav() {
+  const prevBtn = document.getElementById("prev-month-btn");
+  const nextBtn = document.getElementById("next-month-btn");
+
+  // Unbind first to prevent multiple listeners if called multiple times?
+  // Actually replaceWith(clone) is a quick hack to strip listeners.
+  if (prevBtn) {
+    const newPrev = prevBtn.cloneNode(true);
+    prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+    newPrev.onclick = () => {
+      calendarState.currentDisplayDate =
+        calendarState.currentDisplayDate.subtract(1, "month");
+      renderCalendar();
+    };
+  }
+
+  if (nextBtn) {
+    const newNext = nextBtn.cloneNode(true);
+    nextBtn.parentNode.replaceChild(newNext, nextBtn);
+    newNext.onclick = () => {
+      // Prevent going to future months? Maybe limit to current month?
+      // "if current month is same as today's month, don't go next" logic if desired.
+      // But strict requirement wasn't given.
+      calendarState.currentDisplayDate = calendarState.currentDisplayDate.add(
+        1,
+        "month"
+      );
+      renderCalendar();
+    };
+  }
+}
+
+function renderMissingSummary() {
+  const container = document.getElementById("missing-summary");
+  if (!container) return;
+
+  // Count missing
+  const missingCount = missingData.filter((x) => x.status === "missing").length;
+
+  if (missingCount === 0) {
+    // Handled by fetchMissingTimestamps main logic (empty-state)
+    container.classList.add("hidden");
+    return;
+  }
+
+  container.innerHTML = `
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10 whitespace-nowrap">
+            พบ ${missingCount} รายการที่สามารถแก้ไขได้
+        </span>
+    `;
+  container.classList.remove("hidden");
+}
+
+function selectDate(dateStr, items) {
+  // 1. Update Hidden Form Input
+  const dateInput = document.getElementById("date");
+  if (dateInput) dateInput.value = dateStr;
+
+  // 1.1 Update Selected Date Display
+  const dateDisplay = document.getElementById("selected-date-text");
+  const dateInfoContainer = document.getElementById("selected-date-info");
+  if (dateDisplay) {
+    // Format date to Thai format short? Or just YYYY-MM-DD for now
+    // Let's use DayJS to format nicely
+    const formatted = globalThis.dayjs(dateStr).format("DD/MM/YYYY");
+    dateDisplay.textContent = formatted;
+  }
+  if (dateInfoContainer) dateInfoContainer.classList.remove("hidden");
+  if (dateInfoContainer) dateInfoContainer.classList.add("flex"); // Ensure flex
+
+  // 1.2 Show Form
+  const form = document.getElementById("forgetTimeForm");
+  if (form) {
+    form.classList.remove("hidden", "opacity-0");
+  }
+
+  // 2. Filter Dropdown
+  const typeSelect = document.getElementById("timestamp_type");
+  if (typeSelect) {
+    // Reset options
+    typeSelect.innerHTML = '<option value="">เลือกประเภท...</option>';
+
+    // Define all possible options map
+    const typeMap = {
+      work_in: "เข้างาน (Work In)",
+      work_out: "ออกงาน (Work Out)",
+      break_in: "พักเบรก (Break In)",
+      break_out: "สิ้นสุดพัก (Break Out)",
+      ot_in: "เข้าโอที (OT In)",
+      ot_out: "ออกโอที (OT Out)",
+    };
+
+    // Filter valid missing types
+    const missingTypes = items
+      .filter((x) => x.status === "missing")
+      .map((x) => x.type);
+
+    missingTypes.forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.text = typeMap[type] || type;
+      typeSelect.appendChild(option);
+    });
+
+    // 3. Auto-select first option
+    if (missingTypes.length > 0) {
+      typeSelect.value = missingTypes[0];
+    }
+  }
+
+  // 4. Collapse Calendar automatically (Removed logic to toggle button click)
+  // Since we removed the toggle button, we might want to just scroll to form
+
+  // Scroll to form smoothly
+  if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // อ่านข้อมูลจากฟอร์ม
@@ -74,6 +399,12 @@ async function bootstrap() {
 
   // เริ่มต้น LIFF และตั้งค่า UI
   await initLiffAndSetupUI(config);
+
+  // set up calendar (after liff init to get profile)
+  const profile = await getProfileSafe();
+  if (profile?.userId) {
+    await fetchMissingTimestamps(profile.userId);
+  }
 
   // ตั้งค่าการส่งฟอร์มลืมบันทึกเวลา
   setupFormSubmission(config);
