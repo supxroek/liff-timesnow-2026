@@ -98,6 +98,12 @@ function handleFetchSuccess(response) {
     mainEl.classList.remove("hidden");
   } else {
     emptyEl.classList.remove("hidden");
+    // Start auto-close countdown (5 seconds) when showing empty state
+    try {
+      startAutoCloseCountdown(5, "empty-countdown-seconds");
+    } catch (e) {
+      console.warn("startAutoCloseCountdown failed", e);
+    }
   }
 }
 
@@ -268,6 +274,41 @@ function startErrorCountdown(seconds = 5) {
       }
     }
   }, 1000);
+}
+
+// Generic auto-close countdown (used for empty-state as well)
+function startAutoCloseCountdown(
+  seconds = 5,
+  countdownElId = "empty-countdown-seconds"
+) {
+  const countdownEl = document.getElementById(countdownElId);
+  let remaining = typeof seconds === "number" && seconds > 0 ? seconds : 5;
+  if (countdownEl) countdownEl.textContent = String(remaining);
+
+  const timer = setInterval(() => {
+    remaining -= 1;
+    if (countdownEl) countdownEl.textContent = String(Math.max(0, remaining));
+    if (remaining <= 0) {
+      clearInterval(timer);
+      // Attempt to close LIFF client window, fallback to window.close
+      if (
+        globalThis.liff &&
+        typeof globalThis.liff.isInClient === "function" &&
+        globalThis.liff.isInClient()
+      ) {
+        try {
+          globalThis.liff.closeWindow();
+        } catch (e) {
+          console.warn("liff.closeWindow failed", e);
+          globalThis.close();
+        }
+      } else {
+        globalThis.close();
+      }
+    }
+  }, 1000);
+
+  return timer;
 }
 
 function renderCalendar() {
