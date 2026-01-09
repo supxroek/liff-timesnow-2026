@@ -43,65 +43,231 @@ let calendarState = {
 // ==============================================================================
 
 async function fetchMissingTimestamps(lineUserId) {
+  resetFetchState();
+
+  try {
+    const response = await performFetch(lineUserId);
+    if (response.ok && response.status === 200) {
+      handleFetchSuccess(response);
+    } else {
+      handleFetchError(response);
+    }
+  } catch (err) {
+    handleFetchError(err);
+  } finally {
+    const loadingEl = document.getElementById("initial-loading");
+    loadingEl.classList.add("hidden");
+  }
+}
+
+function resetFetchState() {
   const loadingEl = document.getElementById("initial-loading");
   const emptyEl = document.getElementById("empty-state");
   const mainEl = document.getElementById("main-content");
 
-  // Reset state
   loadingEl.classList.remove("hidden");
   emptyEl.classList.add("hidden");
   mainEl.classList.add("hidden");
+}
 
-  try {
-    const { config } = getRuntimeConfig();
-    const idToken = await getIdTokenSafe();
+async function performFetch(lineUserId) {
+  const { config } = getRuntimeConfig();
+  const idToken = await getIdTokenSafe();
 
-    const response = await apiRequest({
-      apiBaseUrl: config.apiBaseUrl,
-      path: "/liff/forget-request/missing",
-      method: "POST",
-      body: { lineUserId },
-      idToken: idToken,
-    });
+  return await apiRequest({
+    apiBaseUrl: config.apiBaseUrl,
+    path: config.endpoints.forgetRequestMissing,
+    method: "POST",
+    body: { lineUserId },
+    idToken: idToken,
+  });
+}
 
-    if (response.ok && response.status === 200) {
-      missingData = response.data.data ? response.data.data : response.data;
+function handleFetchSuccess(response) {
+  const emptyEl = document.getElementById("empty-state");
+  const mainEl = document.getElementById("main-content");
 
-      // Check if there are any missing items
-      const hasMissing = missingData.some((item) => item.status === "missing");
+  missingData = response.data.data ? response.data.data : response.data;
 
-      if (hasMissing) {
-        // Init calendar state with today
-        calendarState.currentDisplayDate = globalThis.dayjs();
-        renderCalendar();
-        renderMissingSummary();
-        mainEl.classList.remove("hidden");
+  const hasMissing = missingData.some((item) => item.status === "missing");
 
-        // Optional: Auto-select first missing date logic could go here
-        // But for now, let user pick
-      } else {
-        // Show Empty State (Success)
-        emptyEl.classList.remove("hidden");
-      }
-    } else {
-      console.error("Fetch missing failed:", response);
-      // On error (e.g. network), showing empty/error state is better than hanging loading
-      showToast({
-        title: "เกิดข้อผิดพลาด",
-        message: "ไม่สามารถดึงข้อมูลย้อนหลังได้",
-        type: "error",
-      });
-    }
-  } catch (err) {
-    console.error("Fetch missing error:", err);
-    showToast({
-      title: "เกิดข้อผิดพลาด",
-      message: "ไม่สามารถดึงข้อมูลย้อนหลังได้",
-      type: "error",
-    });
-  } finally {
-    loadingEl.classList.add("hidden");
+  if (hasMissing) {
+    calendarState.currentDisplayDate = globalThis.dayjs();
+    renderCalendar();
+    renderMissingSummary();
+    mainEl.classList.remove("hidden");
+  } else {
+    emptyEl.classList.remove("hidden");
   }
+}
+
+function handleFetchError(errorOrResponse) {
+  const errorEl = document.getElementById("error-state");
+  const errorMsgEl = document.getElementById("error-message");
+  const emptyEl = document.getElementById("empty-state");
+  const mainEl = document.getElementById("main-content");
+
+  if (errorEl) errorEl.classList.remove("hidden");
+  if (emptyEl) emptyEl.classList.add("hidden");
+  if (mainEl) mainEl.classList.add("hidden");
+
+  // Format incoming error/response into a user-friendly string
+  const message =
+    formatErrorMessage(errorOrResponse) || "ไม่สามารถดึงข้อมูลย้อนหลังได้";
+
+  if (errorMsgEl) errorMsgEl.textContent = message;
+
+  showToast({
+    title: "เกิดข้อผิดพลาด",
+    message: message,
+    type: "error",
+  });
+
+  startErrorCountdown(5);
+}
+
+// Helper function to extract message from an object
+function getMessageFromObject(obj) {
+  if (obj.message && typeof obj.message === "string") return obj.message;
+  if (obj.error && typeof obj.error === "string") return obj.error;
+  if (obj.status && obj.statusText) return `${obj.status} ${obj.statusText}`;
+  const keys = ["detail", "description", "msg"];
+  for (const key of keys) {
+    if (obj[key] && typeof obj[key] === "string") return obj[key];
+  }
+  try {
+    const json = JSON.stringify(obj);
+    return json.length > 300 ? json.slice(0, 300) + "..." : json;
+  } catch {
+    return String(obj);
+  }
+}
+
+// Helper function to extract message from data
+function extractMessageFromData(d) {
+  if (typeof d === "string") return d;
+  if (d.message && typeof d.message === "string") return d.message;
+  if (d.error && typeof d.error === "string") return d.error;
+  if (Array.isArray(d.errors) && d.errors.length) {
+    return d.errors
+      .map((e) => (typeof e === "string" ? e : e.message || JSON.stringify(e)))
+      .join("; ");
+  }
+  if (typeof d === "object") {
+    return getMessageFromObject(d);
+  }
+  return null;
+}
+
+// Nicely format different error shapes into a readable string
+function formatErrorMessage(err) {
+  if (!err) return null;
+
+  // If response-like object with .data, prefer its message
+  if (err.data) {
+    const msg = extractMessageFromData(err.data);
+    if (msg) return msg;
+  }
+
+  // Error instance
+  if (err instanceof Error) {
+    return formatErrorFromError(err);
+  }
+
+  // Plain object (try to interpret common fields)
+  if (typeof err === "object") {
+    return formatErrorFromObject(err);
+  }
+
+  // Fallback string conversions with some translations
+  return formatErrorFromString(err);
+}
+
+function formatErrorFromError(err) {
+  const m = err.message || String(err);
+  // common network error returned by browsers
+  if (m.includes("Failed to fetch"))
+    return "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (ตรวจสอบการเชื่อมต่อเครือข่าย)";
+  if (/timeout/i.test(m)) return "คำขอหมดเวลา โปรดลองอีกครั้งภายหลัง";
+  return m;
+}
+
+function formatErrorFromObject(err) {
+  // HTTP status mapping
+  if (err.status) {
+    const code = Number(err.status) || null;
+    const statusMessages = {
+      401: "สิทธิ์ไม่เพียงพอ (401) โปรดเข้าสู่ระบบ",
+      403: "ไม่มีสิทธิ์เข้าถึง (403)",
+      404: "ไม่พบข้อมูลที่ร้องขอ (404)",
+      500: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ (500)",
+    };
+    if (statusMessages[code]) return statusMessages[code];
+    // fallback to statusText or composed
+    if (err.statusText) return `${err.status} ${err.statusText}`;
+  }
+
+  const objMsg = getMessageFromObject(err);
+  if (objMsg) {
+    // If object message is a generic english phrase, translate some common ones
+    if (objMsg.includes("Failed to fetch"))
+      return "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (ตรวจสอบการเชื่อมต่อเครือข่าย)";
+    return objMsg;
+  }
+  return null;
+}
+
+function formatErrorFromString(s) {
+  const str = String(s || "");
+  if (str.includes("Failed to fetch"))
+    return "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (ตรวจสอบการเชื่อมต่อเครือข่าย)";
+  if (
+    str.toLowerCase().includes("networkerror") ||
+    str.toLowerCase().includes("network error")
+  )
+    return "เกิดปัญหาเครือข่าย โปรดลองใหม่อีกครั้ง";
+  if (str.toLowerCase().includes("timeout"))
+    return "คำขอหมดเวลา โปรดลองอีกครั้งภายหลัง";
+  if (/401|unauthorized/i.test(str))
+    return "สิทธิ์ไม่เพียงพอ (401) โปรดเข้าสู่ระบบหรือขอสิทธิ์เพิ่มเติม";
+  if (/403|forbidden/i.test(str)) return "ไม่มีสิทธิ์เข้าถึง (403)";
+  if (/404|not found/i.test(str)) return "ไม่พบทรัพยากรที่ร้องขอ (404)";
+  if (/500|internal server error/i.test(str))
+    return "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ (500)";
+
+  return str;
+}
+
+// Start a visible countdown on the error UI and close the LIFF window when it reaches 0
+function startErrorCountdown(seconds = 5) {
+  const countdownEl = document.getElementById("error-countdown-seconds");
+  const errorEl = document.getElementById("error-state");
+  if (!errorEl) return;
+  let remaining = typeof seconds === "number" && seconds > 0 ? seconds : 5;
+  if (countdownEl) countdownEl.textContent = String(remaining);
+
+  const timer = setInterval(() => {
+    remaining -= 1;
+    if (countdownEl) countdownEl.textContent = String(Math.max(0, remaining));
+    if (remaining <= 0) {
+      clearInterval(timer);
+      // Attempt to close LIFF client window, fallback to window.close
+      if (
+        globalThis.liff &&
+        typeof globalThis.liff.isInClient === "function" &&
+        globalThis.liff.isInClient()
+      ) {
+        try {
+          globalThis.liff.closeWindow();
+        } catch (e) {
+          console.warn("liff.closeWindow failed", e);
+          globalThis.close();
+        }
+      } else {
+        globalThis.close();
+      }
+    }
+  }, 1000);
 }
 
 function renderCalendar() {
@@ -475,7 +641,7 @@ async function initLiffAndSetupUI(config) {
       type: "error",
       title: "การเริ่ม LIFF ล้มเหลว",
       message:
-        (err?.message || String(err)) +
+        (formatErrorMessage(err) || err?.message || String(err)) +
         " โปรดตรวจสอบการตั้งค่า LIFF ID และการเชื่อมต่อเครือข่ายของคุณ",
     });
   }
@@ -643,10 +809,11 @@ function setupFormSubmission(config) {
         }
       }, 2000);
     } catch (err) {
+      const msg = formatErrorMessage(err) || err?.message || String(err);
       showToast({
         type: "error",
         title: "Unexpected error",
-        message: err?.message || String(err),
+        message: msg,
       });
     } finally {
       setLoading(false);
