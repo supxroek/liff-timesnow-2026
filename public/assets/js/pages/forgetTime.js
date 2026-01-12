@@ -580,6 +580,100 @@ function readPayload() {
   };
 }
 
+// Helper: Populate all dropdown options (Fallback)
+function populateAllOptions() {
+  const typeSelect = document.getElementById("timestamp_type");
+  if (!typeSelect) return;
+
+  const typeMap = {
+    work_in: "เข้างาน (Work In)",
+    work_out: "ออกงาน (Work Out)",
+    break_in: "พักเบรก (Break In)",
+    break_out: "สิ้นสุดพัก (Break Out)",
+    ot_in: "เข้าโอที (OT In)",
+    ot_out: "ออกโอที (OT Out)",
+  };
+
+  typeSelect.innerHTML = '<option value="">เลือกประเภท...</option>';
+  for (const [key, label] of Object.entries(typeMap)) {
+    const option = document.createElement("option");
+    option.value = key;
+    option.text = label;
+    typeSelect.appendChild(option);
+  }
+}
+
+// ฟังก์ชันสำหรับ Auto-fill จาก URL Params
+function autoFillFromParams() {
+  try {
+    const params = new URLSearchParams(globalThis.location.search);
+    const dateParam = params.get("date"); // YYYY-MM-DD
+    const typeParam = params.get("type"); // work_in, etc.
+
+    if (!dateParam) return;
+
+    ensureMainContentVisible();
+
+    const items = missingData.filter((d) => d.date === dateParam);
+
+    if (items.length > 0) {
+      selectDate(dateParam, items);
+    } else {
+      handleFallbackForDate(dateParam);
+    }
+
+    applyTypeParam(typeParam);
+  } catch (err) {
+    console.error("[AutoFill] Error parsing params", err);
+  }
+}
+
+// Helper: Ensure main content is visible
+function ensureMainContentVisible() {
+  const emptyState = document.getElementById("empty-state");
+  const mainContent = document.getElementById("main-content");
+  if (emptyState) emptyState.classList.add("hidden");
+  if (mainContent) mainContent.classList.remove("hidden");
+}
+
+// Helper: Handle fallback UI updates for date
+function handleFallbackForDate(dateParam) {
+  populateAllOptions();
+
+  const dateInput = document.getElementById("date");
+  if (dateInput) dateInput.value = dateParam;
+
+  const dateDisplay = document.getElementById("selected-date-text");
+  const dateInfoContainer = document.getElementById("selected-date-info");
+  if (dateDisplay) {
+    dateDisplay.textContent = globalThis.dayjs(dateParam).format("DD/MM/YYYY");
+  }
+  if (dateInfoContainer) dateInfoContainer.classList.remove("hidden");
+
+  const form = document.getElementById("forgetTimeForm");
+  if (form) {
+    form.classList.remove("hidden", "opacity-0");
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+// Helper: Apply type param to select
+function applyTypeParam(typeParam) {
+  if (!typeParam) return;
+
+  const typeSelect = document.getElementById("timestamp_type");
+  if (!typeSelect) return;
+
+  const optionExists = typeSelect.querySelector(`option[value="${typeParam}"]`);
+  if (!optionExists) {
+    const option = document.createElement("option");
+    option.value = typeParam;
+    option.text = typeParam; // Fallback label
+    typeSelect.appendChild(option);
+  }
+  typeSelect.value = typeParam;
+}
+
 // ==============================================================================
 // ฟังก์ชันบูตสแตรปหน้า Forget Time
 async function bootstrap() {
@@ -615,6 +709,9 @@ async function bootstrap() {
 
   // ตั้งค่าการส่งฟอร์มลืมบันทึกเวลา
   setupFormSubmission(config);
+
+  // ตรวจสอบ URL Params เพื่อ Auto-fill (ถ้ามี)
+  autoFillFromParams();
 }
 
 // ตั้งค่าการแสดงตัวอย่างไฟล์
