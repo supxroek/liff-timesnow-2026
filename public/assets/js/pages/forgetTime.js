@@ -529,9 +529,9 @@ function selectDate(dateStr, items) {
     // Define all possible options map
     const typeMap = {
       work_in: "เข้างาน (Work In)",
-      work_out: "ออกงาน (Work Out)",
-      break_in: "พักเบรก (Break In)",
-      break_out: "สิ้นสุดพัก (Break Out)",
+      work_out: "เลิกงาน (Work Out)",
+      break_in: "เริ่มพัก (Break In)",
+      break_out: "เข้างาน(บ่าย) (Break Out)",
       ot_in: "เข้าโอที (OT In)",
       ot_out: "ออกโอที (OT Out)",
     };
@@ -587,9 +587,9 @@ function populateAllOptions() {
 
   const typeMap = {
     work_in: "เข้างาน (Work In)",
-    work_out: "ออกงาน (Work Out)",
-    break_in: "พักเบรก (Break In)",
-    break_out: "สิ้นสุดพัก (Break Out)",
+    work_out: "เลิกงาน (Work Out)",
+    break_in: "เริ่มพัก (Break In)",
+    break_out: "เข้างาน(บ่าย) (Break Out)",
     ot_in: "เข้าโอที (OT In)",
     ot_out: "ออกโอที (OT Out)",
   };
